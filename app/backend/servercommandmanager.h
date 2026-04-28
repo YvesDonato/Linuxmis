@@ -22,10 +22,10 @@ Q_DECLARE_OPAQUE_POINTER(NvHTTP*)
 #endif
 
 /**
- * @brief Manages server commands functionality with Apollo servers
+ * @brief Manages server commands functionality with Linuxmis servers
  * 
  * This class implements server commands as used in Artemis Android.
- * It requires the server_cmd permission from Apollo servers.
+ * It requires the server_cmd permission from Linuxmis servers.
  * Based on GameMenu.java implementation.
  */
 class ServerCommandManager : public QObject
@@ -66,8 +66,8 @@ public:
     Q_INVOKABLE QString getCommandName(const QString &commandId) const;
     Q_INVOKABLE QString getCommandDescription(const QString &commandId) const;
 
-    // Apollo server detection (matches Android logic)
-    Q_INVOKABLE bool isApolloServer() const;
+    // Linuxmis server detection (matches Android logic)
+    Q_INVOKABLE bool isLinuxmisServer() const;
 
 signals:
     void permissionChanged();
@@ -99,7 +99,7 @@ private:
     // Streaming session state checking
     bool isStreamingSessionActive() const;
     
-    // HTTP-based server command execution (Apollo server approach)
+    // HTTP-based server command execution (Linuxmis server approach)
     bool sendHttpServerCommand(const QString &commandId);
 
 private:

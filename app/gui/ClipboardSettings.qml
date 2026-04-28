@@ -1,6 +1,7 @@
 import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.2
+import "TokyoNightTheme.js" as TokyoNight
 
 import ClipboardManager 1.0
 
@@ -8,7 +9,7 @@ GroupBox {
     id: clipboardSettingsGroupBox
     width: (parent.width - (parent.leftPadding + parent.rightPadding))
     padding: 12
-    title: "<font color=\"skyblue\">" + qsTr("Clipboard Sync") + "</font>"
+    title: "<font color=\"" + TokyoNight.primaryText + "\">" + qsTr("Clipboard Sync") + "</font>"
     font.pointSize: 12
 
     Column {
@@ -34,10 +35,10 @@ GroupBox {
         // Description
         Label {
             width: parent.width
-            text: qsTr("Synchronize clipboard content between your device and the streaming server. Requires Apollo server.")
+            text: qsTr("Synchronize clipboard content between your device and the streaming server. Requires Linuxmis server.")
             font.pointSize: 9
             wrapMode: Text.Wrap
-            color: "#cccccc"
+            color: TokyoNight.text
         }
 
         // Content filtering section
@@ -67,7 +68,7 @@ GroupBox {
                     text: qsTr("Only sync text content, ignore images and files")
                     font.pointSize: 8
                     wrapMode: Text.Wrap
-                    color: "#aaaaaa"
+                    color: TokyoNight.muted
                 }
 
                 Row {
@@ -130,7 +131,7 @@ GroupBox {
                     text: qsTr("Display toast notifications when clipboard content is synchronized")
                     font.pointSize: 8
                     wrapMode: Text.Wrap
-                    color: "#aaaaaa"
+                    color: TokyoNight.muted
                 }
             }
         }
@@ -138,10 +139,10 @@ GroupBox {
         // Note about when sync is active
         Label {
             width: parent.width
-            text: qsTr("Note: Clipboard sync will be active during game streaming sessions when connected to Apollo servers.")
+            text: qsTr("Note: Clipboard sync will be active during game streaming sessions when connected to Linuxmis servers.")
             font.pointSize: 9
             wrapMode: Text.Wrap
-            color: "#aaaaaa"
+            color: TokyoNight.muted
             visible: enableClipboardSync.checked
         }
     }

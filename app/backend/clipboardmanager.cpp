@@ -93,14 +93,14 @@ void ClipboardManager::setConnection(NvComputer *computer, NvHTTP *http)
     
     qDebug() << "ClipboardManager: Connected to" << (computer ? computer->name : "null");
     
-    // Check and emit Apollo support status
+    // Check and emit Linuxmis support status
     bool supported = isClipboardSyncSupported();
-    emit apolloSupportChanged(supported);
+    emit linuxmisSupportChanged(supported);
     
     if (supported) {
-        qDebug() << "ClipboardManager: Apollo server detected - clipboard sync available";
+        qDebug() << "ClipboardManager: Linuxmis server detected - clipboard sync available";
     } else {
-        qDebug() << "ClipboardManager: Non-Apollo server - clipboard sync not available";
+        qDebug() << "ClipboardManager: Non-Linuxmis server - clipboard sync not available";
     }
 }
 
@@ -117,7 +117,7 @@ void ClipboardManager::disconnect()
         emit connectionChanged();
     }
     
-    emit apolloSupportChanged(false);
+    emit linuxmisSupportChanged(false);
     
     qDebug() << "ClipboardManager: Disconnected";
 }
@@ -130,8 +130,8 @@ bool ClipboardManager::sendClipboard(bool force)
     }
 
     if (!isClipboardSyncSupported()) {
-        qWarning() << "ClipboardManager: Clipboard sync not supported (not an Apollo server)";
-        emit clipboardSyncFailed("Clipboard sync only works with Apollo/Sunshine servers");
+        qWarning() << "ClipboardManager: Clipboard sync not supported (not a Linuxmis server)";
+        emit clipboardSyncFailed("Clipboard sync only works with Linuxmis/Sunshine servers");
         return false;
     }
 
@@ -157,8 +157,8 @@ bool ClipboardManager::getClipboard()
     }
 
     if (!isClipboardSyncSupported()) {
-        qWarning() << "ClipboardManager: Clipboard sync not supported (not an Apollo server)";
-        emit clipboardSyncFailed("Clipboard sync only works with Apollo/Sunshine servers");
+        qWarning() << "ClipboardManager: Clipboard sync not supported (not a Linuxmis server)";
+        emit clipboardSyncFailed("Clipboard sync only works with Linuxmis/Sunshine servers");
         return false;
     }
 
@@ -193,7 +193,7 @@ bool ClipboardManager::isClipboardSyncSupported() const
         return false;
     }
 
-    // Based on Artemis Android implementation, we don't need complex Apollo detection.
+    // Based on Artemis Android implementation, we don't need complex Linuxmis detection.
     // Just return true and let the HTTP calls succeed or fail naturally.
     // The clipboard sync endpoints work with any server that supports them.
     return true;

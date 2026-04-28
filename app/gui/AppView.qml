@@ -1,6 +1,7 @@
 import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Controls.Material 2.2
+import "TokyoNightTheme.js" as TokyoNight
 
 import AppModel 1.0
 import ComputerManager 1.0
@@ -147,7 +148,7 @@ CenteredGridView {
                     ToolTip.timeout: 3000
                     ToolTip.visible: hovered
 
-                    Material.background: "#D0808080"
+                    Material.background: TokyoNight.overlaySurface
                 }
 
                 RoundButton {
@@ -175,7 +176,7 @@ CenteredGridView {
                     ToolTip.timeout: 3000
                     ToolTip.visible: hovered
 
-                    Material.background: "#D0808080"
+                    Material.background: TokyoNight.overlaySurface
                 }
             }
         }

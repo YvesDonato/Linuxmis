@@ -43,7 +43,7 @@ void ServerCommandManager::setConnection(NvComputer *computer, NvHTTP *http)
     
     bool oldPermission = m_hasPermission;
     
-    // Check if this is an Apollo server and refresh commands
+    // Check if this is a Linuxmis server and refresh commands
     if (computer && http) {
         refreshCommands();
     } else {
@@ -109,11 +109,11 @@ void ServerCommandManager::refreshCommands()
     } else {
         qDebug() << "ServerCommandManager::refreshCommands: No server commands in serverinfo XML, trying separate endpoint";
         
-        // Try to fetch server commands from a separate endpoint (Apollo extension)
+        // Try to fetch server commands from a separate endpoint (Linuxmis extension)
         fetchAvailableCommands();
         
-        // For now, assume Apollo server and populate with builtin commands as fallback
-        if (isApolloServer()) {
+        // For now, assume Linuxmis server and populate with builtin commands as fallback
+        if (isLinuxmisServer()) {
             m_hasPermission = true;
             m_availableCommands.clear();
             m_commandNames.clear();
@@ -125,14 +125,14 @@ void ServerCommandManager::refreshCommands()
                 m_commandDescriptions[cmd.id] = cmd.description;
             }
             
-            qDebug() << "ServerCommandManager::refreshCommands: Apollo server detected, using builtin commands:" << m_availableCommands;
+            qDebug() << "ServerCommandManager::refreshCommands: Linuxmis server detected, using builtin commands:" << m_availableCommands;
         } else {
             m_hasPermission = false;
             m_availableCommands.clear();
             m_commandNames.clear();
             m_commandDescriptions.clear();
             
-            qDebug() << "ServerCommandManager::refreshCommands: Non-Apollo server, no commands available";
+            qDebug() << "ServerCommandManager::refreshCommands: Non-Linuxmis server, no commands available";
         }
     }
     
@@ -219,16 +219,16 @@ QString ServerCommandManager::getCommandDescription(const QString &commandId) co
     return m_commandDescriptions.value(commandId, "No description available");
 }
 
-bool ServerCommandManager::isApolloServer() const
+bool ServerCommandManager::isLinuxmisServer() const
 {
     if (!m_computer) {
-        qDebug() << "ServerCommandManager::isApolloServer: No computer object";
+        qDebug() << "ServerCommandManager::isLinuxmisServer: No computer object";
         return false;
     }
     
-    // Simplified Apollo detection - always return true and let HTTP calls fail naturally
+    // Simplified Linuxmis detection - always return true and let HTTP calls fail naturally
     // This matches the approach used in ClipboardManager for better reliability
-    qDebug() << "ServerCommandManager::isApolloServer: Assuming Apollo server (simplified detection)";
+    qDebug() << "ServerCommandManager::isLinuxmisServer: Assuming Linuxmis server (simplified detection)";
     return true;
 }
 
@@ -241,7 +241,7 @@ void ServerCommandManager::fetchAvailableCommands()
     
     qDebug() << "ServerCommandManager::fetchAvailableCommands: Trying to fetch server commands from separate endpoint";
     
-    // Try different possible endpoints where Apollo might expose server commands
+    // Try different possible endpoints where Linuxmis might expose server commands
     QStringList possibleEndpoints = {
         "servercommands",
         "commands",
@@ -305,7 +305,7 @@ bool ServerCommandManager::parseServerCommandsXml(const QByteArray &xmlData)
         
         if (xml.isStartElement()) {
             if (xml.name().toString() == "ServerCommand") {
-                // Parse Apollo/Android style server command
+                // Parse Linuxmis/Android style server command
                 QString commandText = xml.readElementText();
                 if (!commandText.isEmpty()) {
                     parsedCommands.append(commandText);
@@ -436,7 +436,7 @@ void ServerCommandManager::sendCommandExecution(const QString &commandId)
         return;
     }
 
-    // Use ENet-based command execution (correct approach for Apollo servers)
+    // Use ENet-based command execution (correct approach for Linuxmis servers)
     qDebug() << "ServerCommandManager: Using ENet-based command execution";
     int result = LiSendExecServerCmd(static_cast<uint8_t>(cmdId));
 
@@ -533,30 +533,30 @@ bool ServerCommandManager::sendHttpServerCommand(const QString &commandId)
         return false;
     }
     
-    // Map command IDs to Apollo server command names
-    QString apolloCommand;
+    // Map command IDs to Linuxmis server command names
+    QString linuxmisCommand;
     if (commandId == "shutdown_server") {
-        apolloCommand = "shutdown";
+        linuxmisCommand = "shutdown";
     } else if (commandId == "restart_server") {
-        apolloCommand = "restart";
+        linuxmisCommand = "restart";
     } else if (commandId == "shutdown_computer") {
-        apolloCommand = "shutdown";
+        linuxmisCommand = "shutdown";
     } else if (commandId == "restart_computer") {
-        apolloCommand = "restart";
+        linuxmisCommand = "restart";
     } else if (commandId == "suspend_computer") {
-        apolloCommand = "suspend";
+        linuxmisCommand = "suspend";
     } else if (commandId == "hibernate_computer") {
-        apolloCommand = "hibernate";
+        linuxmisCommand = "hibernate";
     } else {
         qDebug() << "ServerCommandManager::sendHttpServerCommand: Unknown command ID:" << commandId;
         return false;
     }
     
-    qDebug() << "ServerCommandManager::sendHttpServerCommand: Sending HTTP command:" << apolloCommand << "for command ID:" << commandId;
+    qDebug() << "ServerCommandManager::sendHttpServerCommand: Sending HTTP command:" << linuxmisCommand << "for command ID:" << commandId;
     
     try {
-        // Use the Apollo server command endpoint
-        QString arguments = "command=" + apolloCommand;
+        // Use the Linuxmis server command endpoint
+        QString arguments = "command=" + linuxmisCommand;
         QString response = m_http->openConnectionToString(m_http->m_BaseUrlHttps,
                                                          "actions/server",
                                                          arguments.toUtf8().constData(),
@@ -566,7 +566,7 @@ bool ServerCommandManager::sendHttpServerCommand(const QString &commandId)
         qDebug() << "ServerCommandManager::sendHttpServerCommand: Received response:" << response;
         
         // Parse the response to check for success
-        // Apollo server typically returns JSON or XML responses
+        // Linuxmis server typically returns JSON or XML responses
         if (response.contains("success") || response.contains("200") || response.contains("OK")) {
             qDebug() << "ServerCommandManager::sendHttpServerCommand: Command executed successfully via HTTP";
             

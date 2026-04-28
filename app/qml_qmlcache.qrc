@@ -2,6 +2,7 @@
 <RCC>
     <qresource prefix="/">
         <file alias="gui/main.qml">gui/main.qml</file>
+        <file alias="gui/TokyoNightTheme.js">gui/TokyoNightTheme.js</file>
         <file alias="gui/PcView.qml">gui/PcView.qml</file>
         <file alias="gui/AppView.qml">gui/AppView.qml</file>
         <file alias="gui/SettingsView.qml">gui/SettingsView.qml</file>

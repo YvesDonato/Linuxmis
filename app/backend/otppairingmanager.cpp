@@ -46,7 +46,7 @@ void OTPPairingManager::startOTPPairing(NvComputer *computer, const QString &pin
     }
 
     if (!isOTPSupported(computer)) {
-        emit pairingFailed("OTP pairing is only available with Apollo servers");
+        emit pairingFailed("OTP pairing is only available with Linuxmis servers");
         return;
     }
 
@@ -105,7 +105,7 @@ bool OTPPairingManager::isOTPSupported(NvComputer *computer) const
         return false;
     }
 
-    // OTP pairing is only available with Apollo/Sunshine servers (not Nvidia GeForce Experience)
+    // OTP pairing is only available with Linuxmis/Sunshine servers (not Nvidia GeForce Experience)
     return !computer->isNvidiaServerSoftware;
 }
 
@@ -137,7 +137,7 @@ void OTPPairingManager::performOTPPairing(NvComputer *computer, const QString &p
 {
     emit pairingProgress("Generating OTP authentication...");
     
-    // Generate a 16-byte salt to match the expected format by Apollo servers
+    // Generate a 16-byte salt to match the expected format by Linuxmis servers
     QByteArray saltBytes(16, 0);
     for (int i = 0; i < 16; i++) {
         saltBytes[i] = QRandomGenerator::global()->bounded(256);
@@ -164,7 +164,7 @@ void OTPPairingManager::sendOTPPairingRequest(NvComputer *computer, const QStrin
         // Create NvHTTP instance for this computer
         NvHTTP http(computer);
         
-        qDebug() << "OTPPairingManager: Starting Apollo OTP pairing";
+        qDebug() << "OTPPairingManager: Starting Linuxmis OTP pairing";
         qDebug() << "OTPPairingManager: PIN from user (server-generated):" << m_currentPin;
         qDebug() << "OTPPairingManager: Passphrase from user:" << m_currentPassphrase;
         qDebug() << "OTPPairingManager: Generated OTP hash:" << otpHash;
@@ -172,7 +172,7 @@ void OTPPairingManager::sendOTPPairingRequest(NvComputer *computer, const QStrin
         qDebug() << "OTPPairingManager: Server HTTP URL:" << http.m_BaseUrlHttp.toString();
         qDebug() << "OTPPairingManager: Server HTTPS URL:" << http.m_BaseUrlHttps.toString();
         
-        emit pairingProgress("Sending Apollo OTP pairing request over HTTPS...");
+        emit pairingProgress("Sending Linuxmis OTP pairing request over HTTPS...");
         
         // Build the pairing parameters
         // For OTP authentication, include phrase=getservercert AND otpauth parameter
@@ -202,23 +202,23 @@ void OTPPairingManager::sendOTPPairingRequest(NvComputer *computer, const QStrin
         
         // Parse the XML response
         if (pairingRequest.isEmpty()) {
-            emit pairingFailed("No response from Apollo server. Please check the server is running and OTP is active.");
+            emit pairingFailed("No response from Linuxmis server. Please check the server is running and OTP is active.");
             return;
         }
         
         // Check for specific error cases
         if (pairingRequest.contains("status_code=\"503\"")) {
-            emit pairingFailed("OTP is not available or has expired. Please generate a new OTP on the Apollo server.");
+            emit pairingFailed("OTP is not available or has expired. Please generate a new OTP on the Linuxmis server.");
             return;
         } else if (pairingRequest.contains("status_code=\"400\"")) {
             if (pairingRequest.contains("Invalid uniqueid")) {
                 emit pairingFailed("Invalid uniqueid format. This may be a configuration issue.");
             } else {
-                emit pairingFailed("Invalid OTP hash. Please verify the PIN and passphrase match what you entered in Apollo server.");
+                emit pairingFailed("Invalid OTP hash. Please verify the PIN and passphrase match what you entered in Linuxmis server.");
             }
             return;
         } else if (pairingRequest.contains("status_message=\"OTP auth not available.\"")) {
-            emit pairingFailed("OTP is not available or has expired. Please generate a new OTP on the Apollo server.");
+            emit pairingFailed("OTP is not available or has expired. Please generate a new OTP on the Linuxmis server.");
             return;
         }
         
@@ -242,7 +242,7 @@ void OTPPairingManager::sendOTPPairingRequest(NvComputer *computer, const QStrin
                     // Update the computer's pairing state
                     computer->pairState = NvComputer::PS_PAIRED;
                     
-                    qInfo() << "OTPPairingManager: Apollo OTP pairing successful with" << m_currentComputer->name;
+                    qInfo() << "OTPPairingManager: Linuxmis OTP pairing successful with" << m_currentComputer->name;
                     
                     // Clean up state before emitting success signal
                     m_pairingInProgress = false;
@@ -256,35 +256,35 @@ void OTPPairingManager::sendOTPPairingRequest(NvComputer *computer, const QStrin
                         m_timeoutTimer = nullptr;
                     }
                     
-                    emit pairingCompleted(true, "Apollo OTP pairing completed successfully");
+                    emit pairingCompleted(true, "Linuxmis OTP pairing completed successfully");
                     return; // Early return to avoid cleanup at the end
                 } else {
-                    emit pairingFailed("Invalid server certificate received from Apollo server");
+                    emit pairingFailed("Invalid server certificate received from Linuxmis server");
                     qWarning() << "OTPPairingManager: Invalid server certificate in OTP response";
                 }
             } else {
-                emit pairingFailed("Server certificate not found in Apollo response");
+                emit pairingFailed("Server certificate not found in Linuxmis response");
                 qWarning() << "OTPPairingManager: No server certificate in OTP response";
             }
         } else {
-            emit pairingFailed("Apollo OTP pairing failed: " + pairingRequest);
+            emit pairingFailed("Linuxmis OTP pairing failed: " + pairingRequest);
         }
 
     } catch (const GfeHttpResponseException& e) {
-        QString errorMsg = QString("Apollo OTP pairing failed: %1 (Code: %2)")
+        QString errorMsg = QString("Linuxmis OTP pairing failed: %1 (Code: %2)")
                             .arg(e.getStatusMessage())
                             .arg(e.getStatusCode());
         emit pairingFailed(errorMsg);
         qWarning() << "OTPPairingManager: HTTP error:" << errorMsg;
         
     } catch (const QtNetworkReplyException& e) {
-        QString errorMsg = QString("Apollo OTP pairing network error: %1")
+        QString errorMsg = QString("Linuxmis OTP pairing network error: %1")
                             .arg(e.getErrorText());
         emit pairingFailed(errorMsg);
         qWarning() << "OTPPairingManager: Network error:" << errorMsg;
         
     } catch (const std::exception& e) {
-        QString errorMsg = QString("Apollo OTP pairing error: %1").arg(e.what());
+        QString errorMsg = QString("Linuxmis OTP pairing error: %1").arg(e.what());
         emit pairingFailed(errorMsg);
         qWarning() << "OTPPairingManager: General error:" << errorMsg;
     }
@@ -336,14 +336,14 @@ bool OTPPairingManager::validatePinFormat(const QString &pin)
     return true;
 }
 
-OTPPairingManager::PairState OTPPairingManager::performApolloOTPPairing(NvPairingManager &pairingManager, NvComputer *serverInfo, const QString &pin, const QString &passphrase)
+OTPPairingManager::PairState OTPPairingManager::performLinuxmisOTPPairing(NvPairingManager &pairingManager, NvComputer *serverInfo, const QString &pin, const QString &passphrase)
 {
-    Q_UNUSED(passphrase); // TODO: Use passphrase in AES key derivation for Apollo OTP
+    Q_UNUSED(passphrase); // TODO: Use passphrase in AES key derivation for Linuxmis OTP
     
     // Use the standard pairing flow but with a custom AES key derivation
-    // that includes both PIN and passphrase for Apollo OTP
+    // that includes both PIN and passphrase for Linuxmis OTP
     
-    qInfo() << "OTPPairingManager: Using standard pairing with Apollo OTP modifications";
+    qInfo() << "OTPPairingManager: Using standard pairing with Linuxmis OTP modifications";
     qInfo() << "OTPPairingManager: Server app version:" << serverInfo->appVersion;
     
     // Create a custom pairing implementation that modifies the AES key derivation
@@ -354,8 +354,8 @@ OTPPairingManager::PairState OTPPairingManager::performApolloOTPPairing(NvPairin
         // The key difference is that we need to somehow pass the passphrase
         // to modify the AES key derivation
         
-        // For now, let's try the standard pairing and see if Apollo handles it
-        // If Apollo expects the passphrase in the AES key, we may need to
+        // For now, let's try the standard pairing and see if Linuxmis handles it
+        // If Linuxmis expects the passphrase in the AES key, we may need to
         // implement a custom pairing method or modify NvPairingManager
         
         // Get the server certificate first

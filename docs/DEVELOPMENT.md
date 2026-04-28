@@ -27,7 +27,7 @@ This document tracks our progress on implementing Artemis features in the Qt cli
   - [x] Understand server commands protocol  
   - [x] Examine OTP pairing mechanism
   - [x] Document protocol differences from standard GameStream
-- [x] **Apollo Server Analysis**
+- [x] **Linuxmis Server Analysis**
   - [x] Study server-side protocol extensions
   - [x] Understand new endpoints and data formats
   - [x] Document authentication mechanisms
@@ -45,22 +45,22 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 - [x] **Protocol Implementation**
   - [x] HTTP clipboard sync (`/actions/clipboard?type=text`)
   - [x] OTP pairing with `&otpauth=` parameter
-  - [x] Apollo server detection and permission checking
+  - [x] Linuxmis server detection and permission checking
   - [x] Smart sync logic and loop prevention
 
 ### 🔄 Phase 3: Integration & Testing (IN PROGRESS)
 - [ ] **Moonlight Qt Integration**
   - [ ] Extend NvHTTP class with clipboard endpoints
   - [ ] Extend NvPairingManager with OTP support
-  - [ ] Extend NvComputer with Apollo permission tracking
+  - [ ] Extend NvComputer with Linuxmis permission tracking
   - [ ] Integrate managers with existing session flow
 - [ ] **UI Implementation**
   - [ ] Create clipboard sync settings UI
   - [ ] Create OTP pairing dialog
   - [ ] Create server commands menu
-  - [ ] Add Apollo server indicators
+  - [ ] Add Linuxmis server indicators
 - [ ] **Testing & Validation**
-  - [ ] Test with Apollo server
+  - [ ] Test with Linuxmis server
   - [ ] Validate protocol compatibility
   - [ ] Test error handling and edge cases
 
@@ -69,7 +69,7 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 #### Clipboard Sync Implementation
 - **HTTP Endpoints**: Uses `actions/clipboard` endpoint with `type=text` parameter
 - **Methods**: `getClipboard()` and `sendClipboard(content)` in NvHTTP.java
-- **Protocol**: Simple HTTP GET/POST to Apollo server
+- **Protocol**: Simple HTTP GET/POST to Linuxmis server
 - **Smart Sync**: Automatic sync on stream start/resume and focus loss
 - **Identifier**: Uses `CLIPBOARD_IDENTIFIER` to avoid sync loops
 - **Settings**: `smartClipboardSync`, `smartClipboardSyncToast`, `hideClipboardContent`
@@ -77,14 +77,14 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 #### OTP Pairing Implementation  
 - **Protocol**: Extends standard PIN pairing with `&otpauth=` parameter
 - **Hash**: SHA-256 hash of `pin + saltStr + passphrase`
-- **UI**: 4-digit PIN input, only available with Apollo servers
+- **UI**: 4-digit PIN input, only available with Linuxmis servers
 - **Flow**: Standard pairing flow but with OTP authentication instead of PIN display
 
 #### Server Commands Implementation
-- **Permission**: Requires `server_cmd` permission from Apollo server
+- **Permission**: Requires `server_cmd` permission from Linuxmis server
 - **UI**: Menu option "Server Commands" in game menu
 - **Error Handling**: Shows dialog if no commands available or permission denied
-- **Apollo Only**: Feature only works with Apollo server software
+- **Linuxmis Only**: Feature only works with Linuxmis server software
 
 #### Permission System
 - **Enum**: `ComputerDetails.Operations` defines permission flags
@@ -137,12 +137,12 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 - **OTPPairingManager**: Real OTP authentication with SHA-256 hashing
   - `SHA256(pin + salt + passphrase)` for `&otpauth=` parameter
   - 4-digit PIN validation (matches Android constraint)
-  - Apollo server detection and validation
+  - Linuxmis server detection and validation
   - Integration framework for existing NvPairingManager
 
-- **ServerCommandManager**: Apollo permission system and command framework
+- **ServerCommandManager**: Linuxmis permission system and command framework
   - `server_cmd` permission checking (matches Android ComputerDetails.Operations)
-  - Apollo server detection and validation
+  - Linuxmis server detection and validation
   - Command execution framework with error handling
   - "No Commands Available" dialog (matches Android behavior)
 
@@ -157,7 +157,7 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 - ✅ Matches Android behavior exactly
 - ✅ Modular architecture for easy integration
 - ✅ Comprehensive error handling and validation
-- ✅ Apollo server capability detection
+- ✅ Linuxmis server capability detection
 - ✅ Permission-based feature enabling
 
 **Next Phase**: Integration with existing Moonlight Qt codebase
@@ -174,7 +174,7 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 - ✅ **Implemented real protocol foundations** based on Android analysis
 - ✅ **Created ClipboardManager** with HTTP clipboard sync
 - ✅ **Created OTPPairingManager** with SHA-256 authentication
-- ✅ **Created ServerCommandManager** with Apollo permission system
+- ✅ **Created ServerCommandManager** with Linuxmis permission system
 - 🔄 **Ready for Moonlight Qt integration**
 
 ### Next Steps
@@ -182,14 +182,14 @@ This document tracks our progress on implementing Artemis features in the Qt cli
 2. Extend NvHTTP class with clipboard endpoints (`sendClipboardContent`, `getClipboardContent`)
 3. **Create feature branch**: `feature/nvpairing-otp-support`
 4. Extend NvPairingManager with OTP support (add `&otpauth=` parameter)
-5. **Create feature branch**: `feature/nvcomputer-apollo-permissions`
-6. Extend NvComputer with Apollo permission tracking (`apolloOperations` field)
+5. **Create feature branch**: `feature/nvcomputer-linuxmis-permissions`
+6. Extend NvComputer with Linuxmis permission tracking (`linuxmisOperations` field)
 7. **Create feature branch**: `feature/session-manager-integration`
 8. Integrate managers with existing session management
 9. **Create feature branch**: `feature/artemis-ui-components`
 10. Create UI components for settings and dialogs
-11. **Create feature branch**: `feature/apollo-server-testing`
-12. Test with actual Apollo server
+11. **Create feature branch**: `feature/linuxmis-server-testing`
+12. Test with actual Linuxmis server
 
 ### Git Workflow
 - **Feature branches**: `feature/*` → PR to `development` → PR to `main`
@@ -235,7 +235,7 @@ scripts/
 1. **Clipboard Sync**: What network protocol is used? How is data formatted and secured?
 2. **Server Commands**: What HTTP endpoints are used? How are commands defined and executed?
 3. **OTP Pairing**: How does it differ from PIN pairing? What crypto is used?
-4. **Apollo Integration**: What server-side changes are required?
+4. **Linuxmis Integration**: What server-side changes are required?
 
 ## 📝 Development Log
 
@@ -258,18 +258,18 @@ scripts/
 - [ ] All Artemis Android implementations are understood
 - [ ] Protocol specifications are documented
 - [ ] Implementation plan is created and approved
-- [ ] Test environment is set up with Apollo server
+- [ ] Test environment is set up with Linuxmis server
 
 ### Phase 2 Complete When:
 - [ ] Clipboard sync works bidirectionally
 - [ ] Server commands can be executed from Qt client
-- [ ] OTP pairing works with Apollo server
+- [ ] OTP pairing works with Linuxmis server
 - [ ] All features tested on multiple platforms
 
 ## 📞 Resources & References
 
 - **Artemis Android**: https://github.com/ClassicOldSong/moonlight-android
-- **Apollo Server**: https://github.com/ClassicOldSong/Apollo
+- **Linuxmis Server**: https://github.com/ClassicOldSong/Linuxmis
 - **Moonlight Qt**: https://github.com/moonlight-stream/moonlight-qt
 - **Development Guide**: [docs/DEV_GUIDE.md](docs/DEV_GUIDE.md)
 - **GameStream Protocol**: https://github.com/moonlight-stream/moonlight-docs/wiki/GameStream-Protocol

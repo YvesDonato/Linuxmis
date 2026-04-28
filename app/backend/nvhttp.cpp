@@ -200,7 +200,7 @@ NvHTTP::startApp(QString verb,
     memcpy(&riKeyId, streamConfig->remoteInputAesIv, sizeof(riKeyId));
     riKeyId = qFromBigEndian(riKeyId);
 
-    // Get streaming preferences for Apollo parameters
+    // Get streaming preferences for Linuxmis parameters
     StreamingPreferences* prefs = StreamingPreferences::get();
     
     // Build base parameters - prefer UUID when available, fallback to appId
@@ -225,9 +225,9 @@ NvHTTP::startApp(QString verb,
     //baseParams += "&mode=" + QString::number(streamConfig->width) + "x" +
     //            QString::number(streamConfig->height) + "x";
     
-    // Handle fractional refresh rate for Apollo servers
+    // Handle fractional refresh rate for Linuxmis servers
     if (prefs->enableFractionalRefreshRate) {
-        // Send fractional rate directly (Apollo will handle the conversion)
+        // Send fractional rate directly (Linuxmis will handle the conversion)
         baseParams += QString::number(prefs->customRefreshRate, 'f', 2);
         qInfo() << "Using fractional refresh rate:" << prefs->customRefreshRate << "Hz";
     } else {
@@ -260,10 +260,10 @@ NvHTTP::startApp(QString verb,
                     "&gcmap="+QString::number(gamepadMask)+
                     "&gcpersist="+QString::number(persistGameControllersOnDisconnect ? 1 : 0);
     
-    // Add Apollo-specific parameters
+    // Add Linuxmis-specific parameters
     if (prefs->useVirtualDisplay) {
         allParams += "&virtualDisplay=1";
-        qInfo() << "Requesting virtual display from Apollo server";
+        qInfo() << "Requesting virtual display from Linuxmis server";
     }
     
     if (prefs->enableResolutionScaling && prefs->resolutionScaleFactor != 100) {
@@ -558,7 +558,7 @@ NvHTTP::openConnection(QUrl baseUrl,
     QUrl url(baseUrl);
     url.setPath("/" + command);
 
-    // Use a machine-specific UID to match Apollo server expectations
+    // Use a machine-specific UID to match Linuxmis server expectations
     // Generate a uniqueid based on hostname + timestamp for uniqueness
     static QString machineUniqueId;
     if (machineUniqueId.isEmpty()) {
@@ -654,7 +654,7 @@ NvHTTP::openConnection(QUrl baseUrl,
     return reply;
 }
 
-// Artemis clipboard sync methods (Apollo servers only)
+// Artemis clipboard sync methods (Linuxmis servers only)
 QString
 NvHTTP::getClipboardContent()
 {
@@ -741,4 +741,4 @@ NvHTTP::sendClipboardContent(const QString& content)
 }
 
 // Server command methods are now handled through LiSendExecServerCmd in the moonlight-common-c library
-// instead of direct HTTP requests. This provides better compatibility with the Apollo protocol.
+// instead of direct HTTP requests. This provides better compatibility with the Linuxmis protocol.

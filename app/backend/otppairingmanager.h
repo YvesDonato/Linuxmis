@@ -14,7 +14,7 @@ class NvPairingManager;
 Q_DECLARE_OPAQUE_POINTER(NvComputer*)
 
 /**
- * @brief Manages OTP (One-Time Password) pairing with Apollo servers
+ * @brief Manages OTP (One-Time Password) pairing with Linuxmis servers
  * 
  * This class implements OTP pairing functionality as used in Artemis Android.
  * It extends the standard PIN pairing with SHA-256 hash authentication.
@@ -65,8 +65,8 @@ private:
     // Network request helpers
     void sendOTPPairingRequest(NvComputer *computer, const QString &otpHash, const QString &salt, const QString &passphrase);
     
-    // Apollo OTP pairing implementation
-    PairState performApolloOTPPairing(NvPairingManager &pairingManager, NvComputer *serverInfo, const QString &pin, const QString &passphrase);
+    // Linuxmis OTP pairing implementation
+    PairState performLinuxmisOTPPairing(NvPairingManager &pairingManager, NvComputer *serverInfo, const QString &pin, const QString &passphrase);
     
     // AES encryption/decryption helpers (similar to NvPairingManager)
     QByteArray encryptAES(const QByteArray &plaintext, const QByteArray &key);

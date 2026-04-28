@@ -175,7 +175,7 @@
             '';
 
             meta = {
-              description = "linuxmis Qt client for NVIDIA GameStream, Apollo, and Sunshine servers";
+              description = "linuxmis Qt client for NVIDIA GameStream, Linuxmis, and Sunshine servers";
               homepage = "https://github.com/wjbeckett/artemis";
               license = pkgs.lib.licenses.gpl3Only;
               platforms = systems;

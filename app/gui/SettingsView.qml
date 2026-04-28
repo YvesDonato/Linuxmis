@@ -2,6 +2,7 @@ import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.2
 import QtQuick.Window 2.2
+import "TokyoNightTheme.js" as TokyoNight
 
 import StreamingPreferences 1.0
 import ComputerManager 1.0
@@ -917,7 +918,7 @@ Flickable {
             id: artemisStreamingGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Artemis Streaming Enhancements") + "</font>"
+            title: "<font color=\"" + TokyoNight.primaryText + "\">" + qsTr("Artemis Streaming Enhancements") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -933,10 +934,10 @@ Flickable {
 
                 Label {
                     width: parent.width
-                    text: qsTr("These features require Apollo as the host streaming software.")
+                    text: qsTr("These features require Linuxmis as the host streaming software.")
                     font.pointSize: 9
                     wrapMode: Text.Wrap
-                    color: "#888888"
+                    color: TokyoNight.muted
                 }
 
                 // Virtual Display Control
@@ -954,7 +955,7 @@ Flickable {
                     ToolTip.delay: 1000
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Creates a virtual display on the Apollo server for streaming. Requires Apollo server - not available with Sunshine/GeForce Experience.")
+                    ToolTip.text: qsTr("Creates a virtual display on the Linuxmis server for streaming. Requires Linuxmis server - not available with Sunshine/GeForce Experience.")
                 }
 
                 // Resolution Scaling
@@ -1964,7 +1965,7 @@ Flickable {
             id: artemisSettingsGroupBox
             width: (parent.width - (parent.leftPadding + parent.rightPadding))
             padding: 12
-            title: "<font color=\"skyblue\">" + qsTr("Artemis Features") + "</font>"
+            title: "<font color=\"" + TokyoNight.primaryText + "\">" + qsTr("Artemis Features") + "</font>"
             font.pointSize: 12
 
             Column {
@@ -1979,10 +1980,10 @@ Flickable {
                 // Note about Server Commands
                 Label {
                     width: parent.width
-                    text: qsTr("Server Commands are available during streaming sessions via the game menu when connected to Apollo servers.")
+                    text: qsTr("Server Commands are available during streaming sessions via the game menu when connected to Linuxmis servers.")
                     font.pointSize: 9
                     wrapMode: Text.Wrap
-                    color: "#aaaaaa"
+                    color: TokyoNight.muted
                     topPadding: 10
                 }
             }

@@ -1,13 +1,14 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import "TokyoNightTheme.js" as TokyoNight
 
 Rectangle {
     id: toast
     width: 300
     height: 50
     radius: 10
-    color: "#2A2A2A"
-    border.color: "#4A4A4A"
+    color: TokyoNight.surface
+    border.color: TokyoNight.border
     border.width: 1
     opacity: 0.9
     
@@ -16,7 +17,7 @@ Rectangle {
     Text {
         id: toastText
         anchors.centerIn: parent
-        color: "#FFFFFF"
+        color: TokyoNight.text
         font.pixelSize: 14
         font.bold: true
         wrapMode: Text.WordWrap

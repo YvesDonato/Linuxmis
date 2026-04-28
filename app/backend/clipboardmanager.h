@@ -23,7 +23,7 @@ Q_DECLARE_OPAQUE_POINTER(NvHTTP*)
 /**
  * @brief Manages clipboard synchronization between client and server
  * 
- * This class handles bidirectional clipboard sync with Apollo/Sunshine servers
+ * This class handles bidirectional clipboard sync with Linuxmis/Sunshine servers
  * using the /actions/clipboard HTTP endpoint. Based on Artemis Android implementation.
  */
 class ClipboardManager : public QObject
@@ -70,7 +70,7 @@ public:
     Q_INVOKABLE void enableSmartSync(bool enabled);
     Q_INVOKABLE bool isSmartSyncEnabled() const;
 
-    // Apollo server detection (clipboard sync only works with Apollo servers)
+    // Linuxmis server detection (clipboard sync only works with Linuxmis servers)
     Q_INVOKABLE bool isClipboardSyncSupported() const;
 
     // Auto-sync triggers (matches Android behavior)
@@ -97,7 +97,7 @@ signals:
     void clipboardSyncFailed(const QString &error);
     void clipboardContentChanged();
     void showToast(const QString &message);
-    void apolloSupportChanged(bool supported);
+    void linuxmisSupportChanged(bool supported);
     
     // Property change signals
     void enabledChanged();

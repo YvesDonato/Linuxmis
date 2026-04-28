@@ -190,7 +190,7 @@ private:
                              int& width, int& height);
 
     // Helper function to get actual fps for decoder tests
-    // Converts Apollo's internal fps representation (fps * 1000) back to normal fps
+    // Converts Linuxmis's internal fps representation (fps * 1000) back to normal fps
     int getActualFpsForDecoderTest() const;
 
     void toggleFullscreen();

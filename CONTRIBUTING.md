@@ -73,7 +73,7 @@ git push -u origin feature/clipboard-sync
 
 # Commit your work
 git add .
-git commit -m "Implement clipboard sync with Apollo protocol"
+git commit -m "Implement clipboard sync with Linuxmis protocol"
 git push origin feature/clipboard-sync
 
 # Create PR: feature/clipboard-sync → develop
@@ -120,13 +120,13 @@ docs(readme): update installation instructions
 - Test your changes on at least one platform locally
 - Include unit tests for new functionality when applicable
 - Verify UI changes work across different screen sizes
-- Test with both Apollo and Sunshine servers when relevant
+- Test with both Linuxmis and Sunshine servers when relevant
 
 ## Feature Implementation Guidelines
 
 ### Research Phase
 1. **Study Android implementation** - Check `artemis-android` for reference
-2. **Understand protocol** - Review how Apollo/Sunshine handle the feature
+2. **Understand protocol** - Review how Linuxmis/Sunshine handle the feature
 3. **Plan Qt integration** - Consider Qt-specific APIs and patterns
 
 ### Implementation Phase

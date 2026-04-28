@@ -4,10 +4,10 @@
 #include <QObject>
 
 /**
- * @brief Utility class for parsing Apollo server permissions
+ * @brief Utility class for parsing Linuxmis server permissions
  * 
  * This class parses server permissions from the hex value received
- * from Apollo servers, similar to the Android implementation.
+ * from Linuxmis servers, similar to the Android implementation.
  * 
  * Based on the Android permission system, permissions are stored
  * as a hexadecimal bitmask where each bit represents a specific capability.
@@ -17,7 +17,7 @@ class ServerPermissions : public QObject
     Q_OBJECT
 
 public:
-    // Permission bit flags (based on Android Apollo client)
+    // Permission bit flags (based on Android Linuxmis client)
     enum PermissionFlags {
         // Input permission group
         CONTROLLER_INPUT = 0x00000100,      // Allow controller input

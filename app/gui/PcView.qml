@@ -1,6 +1,7 @@
 import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
+import "TokyoNightTheme.js" as TokyoNight
 
 import ComputerModel 1.0
 
@@ -287,8 +288,8 @@ CenteredGridView {
                     stackView.push(appView)
                 }
                 else {
-                    // If we know this is an Apollo server, use OTP. Otherwise, use PIN.
-                    if (model.apolloVersion) {
+                    // If we know this is a Linuxmis server, use OTP. Otherwise, use PIN.
+                    if (model.linuxmisVersion) {
                         otpPairDialog.computerIndex = index
                         otpPairDialog.open()
                     } else {
@@ -556,14 +557,14 @@ CenteredGridView {
             spacing: 15
             
             Label {
-                text: qsTr("Pairing with Apollo Server: %1").arg(otpPairDialog.computerName)
+                text: qsTr("Pairing with Linuxmis Server: %1").arg(otpPairDialog.computerName)
                 font.bold: true
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
             }
             
             Label {
-                text: qsTr("Apollo servers use OTP (One-Time Password) pairing for enhanced security.")
+                text: qsTr("Linuxmis servers use OTP (One-Time Password) pairing for enhanced security.")
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
             }
@@ -613,10 +614,10 @@ CenteredGridView {
             }
             
             Label {
-                text: qsTr("Enter the PIN from your Apollo server's web interface. Apollo generates this PIN for you.")
+                text: qsTr("Enter the PIN from your Linuxmis server's web interface. Linuxmis generates this PIN for you.")
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                color: "gray"
+                color: TokyoNight.muted
                 font.pointSize: 9
             }
         }
@@ -625,7 +626,7 @@ CenteredGridView {
     NavigableMessageDialog {
         id: otpProgressDialog
         title: qsTr("OTP Pairing in Progress")
-        text: qsTr("Pairing with Apollo server...\n\nThis may take a few seconds.")
+        text: qsTr("Pairing with Linuxmis server...\n\nThis may take a few seconds.")
         standardButtons: Dialog.NoButton
         modal: true
         closePolicy: Popup.NoAutoClose

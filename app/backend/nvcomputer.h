@@ -116,7 +116,7 @@ public:
     QStringList serverCommands;
     quint32 serverPermissions;
     // Remember to update isEqualSerialized() when adding fields here!
-    QString apolloVersion;
+    QString linuxmisVersion;
 
     // Synchronization
     mutable CopySafeReadWriteLock lock;

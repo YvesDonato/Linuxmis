@@ -617,6 +617,49 @@ bool SdlRenderer::testRenderFrame(AVFrame* frame)
     // back to render it. Test that this can be done
     // for the given frame successfully.
     if (frame->hw_frames_ctx != nullptr) {
+#ifdef HAVE_CUDA
+        if (frame->format == AV_PIX_FMT_CUDA && qgetenv("CUDA_ALLOW_COPYBACK_RENDER") != "1") {
+            SDL_Texture* texture = SDL_CreateTexture(m_Renderer,
+                                                     SDL_PIXELFORMAT_NV12,
+                                                     SDL_TEXTUREACCESS_STREAMING,
+                                                     frame->width,
+                                                     frame->height);
+            if (texture == nullptr) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                            "CUDA render test failed: SDL_CreateTexture() failed: %s",
+                            SDL_GetError());
+                return false;
+            }
+
+            bool interopOk = false;
+            {
+                CUDAGLInteropHelper cudaGLHelper(((AVHWFramesContext*)frame->hw_frames_ctx->data)->device_ctx);
+
+                if (SDL_GL_BindTexture(texture, nullptr, nullptr) == 0) {
+                    interopOk = cudaGLHelper.registerBoundTextures() &&
+                                cudaGLHelper.copyCudaFrameToTextures(frame);
+                    SDL_GL_UnbindTexture(texture);
+                }
+                else {
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                                "CUDA render test failed: SDL_GL_BindTexture() failed: %s",
+                                SDL_GetError());
+                }
+            }
+
+            SDL_DestroyTexture(texture);
+
+            if (!interopOk) {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                            "Rejecting CUDA decoder because CUDA/OpenGL interop is unavailable. "
+                            "Set CUDA_ALLOW_COPYBACK_RENDER=1 to allow slow copyback rendering.");
+                return false;
+            }
+
+            return true;
+        }
+#endif
+
 #ifdef HAVE_MMAL
         // FFmpeg for Raspberry Pi has NEON-optimized routines that allow
         // us to use av_hwframe_transfer_data() to convert from SAND frames

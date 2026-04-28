@@ -44,8 +44,8 @@ QVariant ComputerModel::data(const QModelIndex& index, int role) const
         return computer->state == NvComputer::CS_UNKNOWN;
     case ServerSupportedRole:
         return computer->isSupportedServerVersion;
-    case ApolloVersionRole:
-        return computer->apolloVersion;
+    case LinuxmisVersionRole:
+        return computer->linuxmisVersion;
     case DetailsRole: {
         QString state, pairState;
 
@@ -98,7 +98,7 @@ QVariant ComputerModel::data(const QModelIndex& index, int role) const
         details += tr("UUID: %1").arg(computer->uuid) + '\n';
         details += tr("MAC Address: %1").arg(computer->macAddress.isEmpty() ? tr("Unknown") : QString(computer->macAddress.toHex(':'))) + '\n';
 
-        // Server Capabilities Section (Apollo/Sunshine servers only)
+        // Server Capabilities Section (Linuxmis/Sunshine servers only)
         if (computer->serverPermissions != 0) {
             details += '\n' + tr("═══ SERVER CAPABILITIES ═══") + '\n';
             
@@ -144,7 +144,7 @@ QHash<int, QByteArray> ComputerModel::roleNames() const
     names[StatusUnknownRole] = "statusUnknown";
     names[ServerSupportedRole] = "serverSupported";
     names[DetailsRole] = "details";
-    names[ApolloVersionRole] = "apolloVersion";
+    names[LinuxmisVersionRole] = "linuxmisVersion";
 
     return names;
 }
@@ -269,7 +269,7 @@ bool ComputerModel::isOTPSupported(int computerIndex)
     NvComputer* computer = m_Computers[computerIndex];
     QReadLocker lock(&computer->lock);
     
-    // OTP pairing is only available with Apollo/Sunshine servers (not Nvidia GeForce Experience)
+    // OTP pairing is only available with Linuxmis/Sunshine servers (not Nvidia GeForce Experience)
     return !computer->isNvidiaServerSoftware;
 }
 

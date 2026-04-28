@@ -184,7 +184,7 @@ public:
     QImage
     getBoxArt(int appId);
 
-    // Artemis clipboard sync endpoints (Apollo servers only)
+    // Artemis clipboard sync endpoints (Linuxmis servers only)
     QString
     getClipboardContent();
 

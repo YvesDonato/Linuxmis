@@ -1,6 +1,7 @@
 import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.2
+import "TokyoNightTheme.js" as TokyoNight
 import ServerCommandManager 1.0
 
 Rectangle {
@@ -9,9 +10,9 @@ Rectangle {
     width: 500
     height: 400
     // Don't use anchors with SizeViewToRootObject - position manually
-    color: "#2d2d2d"
+    color: TokyoNight.surface
     radius: 10
-    border.color: "#444"
+    border.color: TokyoNight.border
     border.width: 1
     visible: true  // Always visible when created
     opacity: 1.0
@@ -55,7 +56,7 @@ Rectangle {
             text: currentMenu === "main" ? qsTr("Quick Menu") : qsTr("Server Commands")
             font.pointSize: 24
             font.bold: true
-            color: "#00cccc"
+            color: TokyoNight.primaryText
             Layout.alignment: Qt.AlignHCenter
         }
 
@@ -74,8 +75,8 @@ Rectangle {
                 flat: true
 
                 background: Rectangle {
-                    color: parent.down ? "#333" : (parent.hovered ? "#444" : "transparent")
-                    border.color: parent.hovered ? "#00cccc" : "transparent"
+                    color: parent.down ? TokyoNight.surfacePressed : (parent.hovered ? TokyoNight.surfaceHover : "transparent")
+                    border.color: parent.hovered ? TokyoNight.accent : "transparent"
                     border.width: 2
                     radius: 5
                 }
@@ -95,7 +96,7 @@ Rectangle {
                     Text {
                         text: model.icon
                         font.pointSize: 20
-                        color: "white"
+                        color: TokyoNight.text
                         Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                         Layout.preferredWidth: 40
                     }
@@ -109,13 +110,13 @@ Rectangle {
                             text: model.text
                             font.pointSize: 14
                             font.bold: true
-                            color: "white"
+                            color: TokyoNight.text
                         }
 
                         Text {
                             text: model.description
                             font.pointSize: 10
-                            color: "#cccccc"
+                            color: TokyoNight.muted
                         }
                     }
                 }
@@ -145,8 +146,8 @@ Rectangle {
         width: Math.min(parent.width - 40, toastText.implicitWidth + 20)
         height: 40
         radius: 20
-        color: "#333"
-        border.color: "#666"
+        color: TokyoNight.surfacePressed
+        border.color: TokyoNight.border
         border.width: 1
         visible: showToast
         opacity: showToast ? 1.0 : 0.0
@@ -158,7 +159,7 @@ Rectangle {
         Text {
             id: toastText
             text: toastMessage
-            color: "white"
+            color: TokyoNight.text
             font.pointSize: 12
             anchors.centerIn: parent
         }
@@ -384,4 +385,3 @@ Rectangle {
         }
     }
 }
-

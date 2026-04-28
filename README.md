@@ -1,6 +1,6 @@
 # Artemis Qt
 
-[Artemis Qt](https://github.com/wjbeckett/artemis) is an enhanced cross-platform client for NVIDIA GameStream and [Apollo](https://github.com/ClassicOldSong/Apollo)/[Sunshine](https://github.com/LizardByte/Sunshine) servers. It brings the advanced features from [Artemis Android](https://github.com/ClassicOldSong/moonlight-android) to desktop platforms.
+[Artemis Qt](https://github.com/wjbeckett/artemis) is an enhanced cross-platform client for NVIDIA GameStream and [Linuxmis](https://github.com/ClassicOldSong/Linuxmis)/[Sunshine](https://github.com/LizardByte/Sunshine) servers. It brings the advanced features from [Artemis Android](https://github.com/ClassicOldSong/moonlight-android) to desktop platforms.
 
 ## 🙏 Attribution
 
@@ -9,7 +9,7 @@ Artemis Qt is built upon the excellent foundation of [**Moonlight Qt**](https://
 **Key Credits:**
 - **Core streaming technology** - [Moonlight Qt](https://github.com/moonlight-stream/moonlight-qt)
 - **Enhanced features inspiration** - [Artemis Android](https://github.com/ClassicOldSong/moonlight-android) by [ClassicOldSong](https://github.com/ClassicOldSong)
-- **Server compatibility** - [Apollo](https://github.com/ClassicOldSong/Apollo) and [Sunshine](https://github.com/LizardByte/Sunshine) projects
+- **Server compatibility** - [Linuxmis](https://github.com/ClassicOldSong/Linuxmis) and [Sunshine](https://github.com/LizardByte/Sunshine) projects
 
 [![Build Status](https://github.com/wjbeckett/artemis/workflows/Build%20Artemis%20Qt/badge.svg)](https://github.com/wjbeckett/artemis/actions)
 [![Downloads](https://img.shields.io/github/downloads/wjbeckett/artemis/total)](https://github.com/wjbeckett/artemis/releases)
@@ -34,7 +34,7 @@ Artemis Qt includes all the features of Moonlight Qt, plus these enhanced capabi
 
 ### 🎯 Phase 1 (Foundation) - Complete
 - **📋 Clipboard Sync** - Seamlessly sync clipboard content between client and server - ✅ **COMPLETE**
-- **⚡ Server Commands** - Execute custom commands on the Apollo/Sunshine server - ✅ **COMPLETE**
+- **⚡ Server Commands** - Execute custom commands on the Linuxmis/Sunshine server - ✅ **COMPLETE**
 - **🔐 OTP Pairing** - One-Time Password pairing for enhanced security - ✅ **COMPLETE**
 - **🎮 Quick Menu** - In-stream overlay menu for easy access to controls - ✅ **COMPLETE**
 
@@ -44,9 +44,9 @@ Artemis Qt includes all the features of Moonlight Qt, plus these enhanced capabi
 - **🖼️ Virtual Display Control** - Choose whether to use virtual displays - ✅ **COMPLETE**
 
 ### 🆕 Phase 3 (UUID & Modern Features) - Complete
-- **🆔 UUID-Based App Launching** - Modern app identification system for Apollo/Sunshine servers - ✅ **COMPLETE**
+- **🆔 UUID-Based App Launching** - Modern app identification system for Linuxmis/Sunshine servers - ✅ **COMPLETE**
 - **🔄 Automatic Fallback** - Seamlessly falls back to legacy app IDs when UUIDs unavailable - ✅ **COMPLETE**
-- **🎨 Visual Rebranding** - Official Artemis icons and art:// protocol compatibility with Apollo Android - ✅ **COMPLETE**
+- **🎨 Visual Rebranding** - Official Artemis icons and art:// protocol compatibility with Linuxmis Android - ✅ **COMPLETE**
 - **🚀 Development Builds** - Automated development builds with changelogs for all platforms - ✅ **COMPLETE**
 
 ### 🚀 Phase 4 (Advanced) - In Progress
@@ -135,7 +135,7 @@ This is normal for development builds and doesn't indicate actual damage to the 
 > - **🎮 Enhanced Quick Menu** - New keyboard (`Ctrl+Alt+Shift+\`) and gamepad shortcuts (`Select+L1+R1+Y`)
 > - Permission viewing from the client
 > - Complete Artemis rebranding with official icons and art:// protocol support
-> - UUID-based app launching for modern Apollo/Sunshine servers
+> - UUID-based app launching for modern Linuxmis/Sunshine servers
 > - Enhanced error handling and logging
 > - Improved compatibility with latest server versions
 
@@ -243,8 +243,8 @@ Legend: ✅ Available, 🚧 In Development, 📋 Planned
 - **�️ Windows ARM64 Support** - ✨ **NEW!** Native ARM64 builds for Windows on ARM devices (Surface Pro X, Copilot+ PCs)
 - **🎮 Enhanced Quick Menu** - Improved keyboard shortcut (`Ctrl+Alt+Shift+\`) and gamepad combo (`Select+L1+R1+Y`)
 - **�🔍 Permission Viewing** - View server-side permissions for clients
-- **Complete Visual Rebranding** - Official Artemis icons and branding from Apollo developer, art:// protocol support
-- **UUID-Based App Launching** - Modern app identification system that works seamlessly with Apollo/Sunshine servers
+- **Complete Visual Rebranding** - Official Artemis icons and branding from Linuxmis developer, art:// protocol support
+- **UUID-Based App Launching** - Modern app identification system that works seamlessly with Linuxmis/Sunshine servers
 - **🔄 Smart Fallback System** - Automatically uses legacy app IDs when UUIDs aren't available
 - **🔐 OTP Pairing** - Enhanced security with One-Time Password authentication
 - **🚀 Automated Development Builds** - Get the latest features with automatic changelogs for all platforms
@@ -283,7 +283,7 @@ We welcome contributions! Here's how to get started:
 ## 🔗 Related Projects
 
 - **[Artemis Android](https://github.com/ClassicOldSong/moonlight-android)** - The original Artemis for Android
-- **[Apollo Server](https://github.com/ClassicOldSong/Apollo)** - Enhanced GameStream server
+- **[Linuxmis Server](https://github.com/ClassicOldSong/Linuxmis)** - Enhanced GameStream server
 - **[Moonlight Qt](https://github.com/moonlight-stream/moonlight-qt)** - The upstream project
 - **[Sunshine](https://github.com/LizardByte/Sunshine)** - Open-source GameStream server
 
@@ -293,7 +293,7 @@ This project is licensed under the GPL v3 License - see the [LICENSE](LICENSE) f
 
 ## 🙏 Acknowledgments
 
-- **[ClassicOldSong](https://github.com/ClassicOldSong)** - Creator of Artemis Android and Apollo server
+- **[ClassicOldSong](https://github.com/ClassicOldSong)** - Creator of Artemis Android and Linuxmis server
 - **[Moonlight Team](https://github.com/moonlight-stream)** - For the excellent foundation
 - **[LizardByte](https://github.com/LizardByte)** - For the Sunshine server
 - **All contributors** who help make this project better

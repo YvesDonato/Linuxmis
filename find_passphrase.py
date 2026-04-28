@@ -22,7 +22,7 @@ def find_passphrase():
     # Test common passphrases
     common_passphrases = [
         "", "default", "password", "123456", "admin", "test", "user", "guest",
-        "apollo", "artemis", "moonlight", "sunshine", "nvidia", "gamestream",
+        "linuxmis", "artemis", "moonlight", "sunshine", "nvidia", "gamestream",
         "pass", "secret", "key", "auth", "otp", "pin", "1234", "0000",
         "server", "client", "pairing", "cert", "ssl", "tls", "https"
     ]

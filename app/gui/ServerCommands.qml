@@ -1,6 +1,7 @@
 import QtQuick 2.9
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.2
+import "TokyoNightTheme.js" as TokyoNight
 
 import ServerCommandManager 1.0
 
@@ -8,7 +9,7 @@ GroupBox {
     id: serverCommandsGroupBox
     width: (parent.width - (parent.leftPadding + parent.rightPadding))
     padding: 12
-    title: "<font color=\"skyblue\">" + qsTr("Server Commands") + "</font>"
+    title: "<font color=\"" + TokyoNight.primaryText + "\">" + qsTr("Server Commands") + "</font>"
     font.pointSize: 12
 
     Column {
@@ -18,19 +19,19 @@ GroupBox {
         // Description
         Label {
             width: parent.width
-            text: qsTr("Execute commands on the streaming server during game sessions. Requires Apollo server with command permissions enabled.")
+            text: qsTr("Execute commands on the streaming server during game sessions. Requires Linuxmis server with command permissions enabled.")
             font.pointSize: 9
             wrapMode: Text.Wrap
-            color: "#cccccc"
+            color: TokyoNight.text
         }
 
         // Note about when commands are available
         Label {
             width: parent.width
-            text: qsTr("Note: Commands will be available during streaming sessions when connected to Apollo servers.")
+            text: qsTr("Note: Commands will be available during streaming sessions when connected to Linuxmis servers.")
             font.pointSize: 9
             wrapMode: Text.Wrap
-            color: "#aaaaaa"
+            color: TokyoNight.muted
         }
 
         // Command buttons grid
@@ -135,7 +136,7 @@ GroupBox {
                 text: confirmDialog.commandDescription
                 font.pointSize: 11
                 wrapMode: Text.Wrap
-                color: "#cccccc"
+                color: TokyoNight.text
             }
 
             Label {
@@ -186,7 +187,7 @@ GroupBox {
                 text: qsTr("Warning: Only execute commands you trust. Custom commands may have different security implications.")
                 font.pointSize: 9
                 wrapMode: Text.Wrap
-                color: "#FFC107"
+                color: TokyoNight.accent
             }
         }
 
@@ -231,7 +232,7 @@ GroupBox {
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(300, parent.width * 0.8)
         height: 40
-        color: "#4CAF50"
+        color: TokyoNight.success
         radius: 5
         visible: false
         
@@ -240,7 +241,7 @@ GroupBox {
         Label {
             anchors.centerIn: parent
             text: successToast.text
-            color: "white"
+            color: TokyoNight.background
             font.pointSize: 10
         }
 
@@ -262,7 +263,7 @@ GroupBox {
         anchors.horizontalCenter: parent.horizontalCenter
         width: Math.min(300, parent.width * 0.8)
         height: 40
-        color: "#F44336"
+        color: TokyoNight.error
         radius: 5
         visible: false
         
@@ -271,7 +272,7 @@ GroupBox {
         Label {
             anchors.centerIn: parent
             text: errorToast.text
-            color: "white"
+            color: TokyoNight.background
             font.pointSize: 10
         }
 

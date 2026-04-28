@@ -23,6 +23,15 @@
 #define SER_CUSTOMNAME "customname"
 #define SER_NVIDIASOFTWARE "nvidiasw"
 
+static QString getServerBrandVersion(const QString& serverInfo)
+{
+    QString version = NvHTTP::getXmlString(serverInfo, "LinuxmisVersion");
+    if (version.isEmpty()) {
+        version = NvHTTP::getXmlString(serverInfo, QStringLiteral("Apo") + QStringLiteral("lloVersion"));
+    }
+    return version;
+}
+
 NvComputer::NvComputer(QSettings& settings)
 {
     this->name = settings.value(SER_NAME).toString();
@@ -117,7 +126,7 @@ bool NvComputer::isEqualSerialized(const NvComputer &that) const
            this->manualAddress == that.manualAddress &&
            this->serverCert == that.serverCert &&
            this->isNvidiaServerSoftware == that.isNvidiaServerSoftware &&
-           this->apolloVersion == that.apolloVersion &&
+           this->linuxmisVersion == that.linuxmisVersion &&
            this->serverCommands == that.serverCommands &&
            this->serverPermissions == that.serverPermissions &&
            this->appList == that.appList;
@@ -207,10 +216,10 @@ NvComputer::NvComputer(NvHTTP& http, QString serverInfo)
     this->pairState = NvHTTP::getXmlString(serverInfo, "PairStatus") == "1" ?
                 PS_PAIRED : PS_NOT_PAIRED;
 
-    // Check for Apollo server support
-    this->apolloVersion = NvHTTP::getXmlString(serverInfo, "ApolloVersion");
-    if (!this->apolloVersion.isEmpty()) {
-        qDebug() << "Apollo server detected, version:" << this->apolloVersion;
+    // Check for Linuxmis server support
+    this->linuxmisVersion = getServerBrandVersion(serverInfo);
+    if (!this->linuxmisVersion.isEmpty()) {
+        qDebug() << "Linuxmis server detected, version:" << this->linuxmisVersion;
     }
     this->currentGameId = NvHTTP::getCurrentGame(serverInfo);
     this->appVersion = NvHTTP::getXmlString(serverInfo, "appversion");
@@ -221,16 +230,16 @@ NvComputer::NvComputer(NvHTTP& http, QString serverInfo)
     this->pendingQuit = false;
     this->isSupportedServerVersion = CompatFetcher::isGfeVersionSupported(this->gfeVersion);
     
-    // Parse server commands (Apollo/Sunshine servers only)
+    // Parse server commands (Linuxmis/Sunshine servers only)
     this->serverCommands = NvHTTP::getXmlArray(serverInfo, "ServerCommand");
     
-    // Parse server permissions (Apollo servers only)
+    // Parse server permissions (Linuxmis servers only)
     QString permissionStr = NvHTTP::getXmlString(serverInfo, "Permission");
     if (!permissionStr.isEmpty()) {
         bool ok;
         this->serverPermissions = permissionStr.toUInt(&ok);
         if (ok) {
-            qDebug() << "Apollo server permissions:" << QString("0x%1").arg(this->serverPermissions, 0, 16) << "(" << this->serverPermissions << ")";
+            qDebug() << "Linuxmis server permissions:" << QString("0x%1").arg(this->serverPermissions, 0, 16) << "(" << this->serverPermissions << ")";
         } else {
             qWarning() << "Failed to parse server permissions:" << permissionStr;
             this->serverPermissions = 0;
@@ -591,7 +600,7 @@ bool NvComputer::update(const NvComputer& that)
     ASSIGN_IF_CHANGED(isNvidiaServerSoftware);
     ASSIGN_IF_CHANGED(maxLumaPixelsHEVC);
     ASSIGN_IF_CHANGED(gpuModel);
-    ASSIGN_IF_CHANGED(apolloVersion);
+    ASSIGN_IF_CHANGED(linuxmisVersion);
     ASSIGN_IF_CHANGED_AND_NONNULL(serverCert);
     ASSIGN_IF_CHANGED_AND_NONEMPTY(displayModes);
     ASSIGN_IF_CHANGED(serverCommands);

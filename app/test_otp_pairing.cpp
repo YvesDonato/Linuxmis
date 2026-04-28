@@ -14,12 +14,12 @@ int main(int argc, char *argv[])
     
     // Set up command line parser
     QCommandLineParser parser;
-    parser.setApplicationDescription("Test OTP Pairing with Apollo Server");
+    parser.setApplicationDescription("Test OTP Pairing with Linuxmis Server");
     parser.addHelpOption();
     parser.addVersionOption();
     
     QCommandLineOption serverOption(QStringList() << "s" << "server",
-                                   "Apollo server IP address", "server");
+                                   "Linuxmis server IP address", "server");
     parser.addOption(serverOption);
     
     QCommandLineOption pinOption(QStringList() << "p" << "pin",
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
         passphrase = "default"; // Use default passphrase if not provided
     }
     
-    qInfo() << "Starting OTP pairing test with Apollo server...";
+    qInfo() << "Starting OTP pairing test with Linuxmis server...";
     qInfo() << "Server:" << serverAddress;
     qInfo() << "PIN:" << pin;
     qInfo() << "Passphrase:" << passphrase;
@@ -87,17 +87,17 @@ int main(int argc, char *argv[])
         QCoreApplication::quit();
     });
     
-    // Create a mock computer object for the Apollo server
-    NvComputer *apolloComputer = new NvComputer();
-    apolloComputer->name = "Apollo Server";
-    apolloComputer->activeAddress = NvAddress(serverAddress, 47989); // Default Apollo port
-    apolloComputer->activeHttpsPort = 47984; // Default Apollo HTTPS port
-    apolloComputer->isNvidiaServerSoftware = false; // Apollo is not Nvidia software
-    apolloComputer->state = NvComputer::CS_ONLINE;
-    apolloComputer->pairState = NvComputer::PS_NOT_PAIRED;
+    // Create a mock computer object for the Linuxmis server
+    NvComputer *linuxmisComputer = new NvComputer();
+    linuxmisComputer->name = "Linuxmis Server";
+    linuxmisComputer->activeAddress = NvAddress(serverAddress, 47989); // Default Linuxmis port
+    linuxmisComputer->activeHttpsPort = 47984; // Default Linuxmis HTTPS port
+    linuxmisComputer->isNvidiaServerSoftware = false; // Linuxmis is not Nvidia software
+    linuxmisComputer->state = NvComputer::CS_ONLINE;
+    linuxmisComputer->pairState = NvComputer::PS_NOT_PAIRED;
     
     // Test OTP support detection
-    if (!otpManager.isOTPSupported(apolloComputer)) {
+    if (!otpManager.isOTPSupported(linuxmisComputer)) {
         qWarning() << "❌ Server does not support OTP pairing";
         return 1;
     }
@@ -105,9 +105,9 @@ int main(int argc, char *argv[])
     qInfo() << "✓ Server supports OTP pairing";
     
     // Start the OTP pairing process
-    QTimer::singleShot(100, [&otpManager, apolloComputer, pin, passphrase]() {
+    QTimer::singleShot(100, [&otpManager, linuxmisComputer, pin, passphrase]() {
         qInfo() << "Starting OTP pairing process...";
-        otpManager.startOTPPairing(apolloComputer, pin, passphrase);
+        otpManager.startOTPPairing(linuxmisComputer, pin, passphrase);
     });
     
     // Set up timeout
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     int result = app.exec();
     
     // Clean up
-    delete apolloComputer;
+    delete linuxmisComputer;
     
     return result;
 }

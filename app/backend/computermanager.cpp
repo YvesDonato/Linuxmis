@@ -957,7 +957,7 @@ qDebug() << "PendingOTPPairingTask: Generated AES key from salt+PIN";
             // Create NvHTTP instance for this computer
             NvHTTP http(m_Computer);
             
-            qDebug() << "PendingOTPPairingTask: Starting Apollo OTP pairing";
+            qDebug() << "PendingOTPPairingTask: Starting Linuxmis OTP pairing";
             qDebug() << "PendingOTPPairingTask: PIN from user:" << m_Pin;
             qDebug() << "PendingOTPPairingTask: Passphrase from user:" << m_Passphrase;
             
@@ -1002,14 +1002,14 @@ qDebug() << "PendingOTPPairingTask: Generated AES key from salt+PIN";
             // Parse the response
             if (pairingRequest.isEmpty()) {
                 qDebug() << "PendingOTPPairingTask: OTP pairing failed - no response";
-                emit pairingCompleted(m_Computer, "No response from Apollo server. Please check the server is running and OTP is active.");
+                emit pairingCompleted(m_Computer, "No response from Linuxmis server. Please check the server is running and OTP is active.");
                 return;
             }
             
             // Check for specific error cases
             if (pairingRequest.contains("status_message=\"OTP auth not available.\"")) {
                 qDebug() << "PendingOTPPairingTask: OTP pairing failed - OTP not available";
-                emit pairingCompleted(m_Computer, "OTP is not available or has expired. Please generate a new OTP on the Apollo server.");
+                emit pairingCompleted(m_Computer, "OTP is not available or has expired. Please generate a new OTP on the Linuxmis server.");
                 return;
             }
             
@@ -1063,38 +1063,38 @@ qDebug() << "PendingOTPPairingTask: Generated AES key from salt+PIN";
                             return;
                         } else {
                             qDebug() << "PendingOTPPairingTask: Full pairing handshake failed";
-                            emit pairingCompleted(m_Computer, "Apollo pairing handshake failed");
+                            emit pairingCompleted(m_Computer, "Linuxmis pairing handshake failed");
                             return;
                         }
                     } else {
                         qDebug() << "PendingOTPPairingTask: Invalid server certificate received";
-                        emit pairingCompleted(m_Computer, "Invalid server certificate received from Apollo server");
+                        emit pairingCompleted(m_Computer, "Invalid server certificate received from Linuxmis server");
                         return;
                     }
                 } else {
                     qDebug() << "PendingOTPPairingTask: No server certificate found in response";
-                    emit pairingCompleted(m_Computer, "Server certificate not found in Apollo response");
+                    emit pairingCompleted(m_Computer, "Server certificate not found in Linuxmis response");
                     return;
                 }
             } else {
                 qDebug() << "PendingOTPPairingTask: OTP pairing failed with response:" << pairingRequest;
-                emit pairingCompleted(m_Computer, "Apollo OTP pairing failed: " + pairingRequest);
+                emit pairingCompleted(m_Computer, "Linuxmis OTP pairing failed: " + pairingRequest);
                 return;
             }
             
         } catch (const GfeHttpResponseException& e) {
-            QString errorMsg = QString("Apollo OTP pairing failed: %1 (Code: %2)")
+            QString errorMsg = QString("Linuxmis OTP pairing failed: %1 (Code: %2)")
                                 .arg(e.getStatusMessage())
                                 .arg(e.getStatusCode());
             qDebug() << "PendingOTPPairingTask: HTTP error:" << errorMsg;
             emit pairingCompleted(m_Computer, errorMsg);
         } catch (const QtNetworkReplyException& e) {
-            QString errorMsg = QString("Apollo OTP pairing network error: %1")
+            QString errorMsg = QString("Linuxmis OTP pairing network error: %1")
                                 .arg(e.getErrorText());
             qDebug() << "PendingOTPPairingTask: Network error:" << errorMsg;
             emit pairingCompleted(m_Computer, errorMsg);
         } catch (const std::exception& e) {
-            QString errorMsg = QString("Apollo OTP pairing error: %1").arg(e.what());
+            QString errorMsg = QString("Linuxmis OTP pairing error: %1").arg(e.what());
             qDebug() << "PendingOTPPairingTask: General error:" << errorMsg;
             emit pairingCompleted(m_Computer, errorMsg);
         }

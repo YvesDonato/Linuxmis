@@ -504,9 +504,9 @@ int Session::getActualFpsForDecoderTest() const
 {
     int fps = m_StreamConfig.fps;
     
-    // If fractional refresh rate is enabled, the fps might be multiplied by 1000 for Apollo
+    // If fractional refresh rate is enabled, the fps might be multiplied by 1000 for Linuxmis
     if (m_Preferences->enableFractionalRefreshRate && fps > 1000) {
-        // Convert back from Apollo's internal representation (fps * 1000) to actual fps
+        // Convert back from Linuxmis's internal representation (fps * 1000) to actual fps
         fps = fps / 1000;
     }
     
@@ -542,7 +542,7 @@ bool Session::populateDecoderProperties(SDL_Window* window)
 {
     IVideoDecoder* decoder;
 
-    // Use actual fps for decoder testing (handles Apollo's fps * 1000 representation)
+    // Use actual fps for decoder testing (handles Linuxmis's fps * 1000 representation)
     int testFps = getActualFpsForDecoderTest();
 
     if (!chooseDecoder(m_Preferences->videoDecoderSelection,
@@ -679,7 +679,7 @@ bool Session::initialize()
     m_StreamConfig.width = m_Preferences->width;
     m_StreamConfig.height = m_Preferences->height;
 
-    // Artemis Apollo integration: Apply resolution scaling if enabled
+    // Artemis Linuxmis integration: Apply resolution scaling if enabled
     if (m_Preferences->enableResolutionScaling && m_Preferences->resolutionScaleFactor != 100) {
         // Apply scaling factor to resolution
         m_StreamConfig.width = (m_StreamConfig.width * m_Preferences->resolutionScaleFactor) / 100;
@@ -722,10 +722,10 @@ bool Session::initialize()
     m_StreamConfig.fps = m_Preferences->fps;
     m_StreamConfig.bitrate = m_Preferences->bitrateKbps;
 
-    // Artemis Apollo integration: Apply fractional refresh rate if enabled
+    // Artemis Linuxmis integration: Apply fractional refresh rate if enabled
     if (m_Preferences->enableFractionalRefreshRate) {
         // Convert fractional refresh rate to integer (multiply by 1000 for precision)
-        // This matches Apollo's internal representation: fps * 1000
+        // This matches Linuxmis's internal representation: fps * 1000
         int fractionalFps = (int)(m_Preferences->customRefreshRate * 1000);
         m_StreamConfig.fps = fractionalFps;
         

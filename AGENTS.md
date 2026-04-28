@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-linuxmis is a Qt/C++ desktop streaming client. The root `artemis.pro` qmake project ties together the app and bundled libraries. Main code lives in `app/`: `backend/` handles GameStream/Apollo/Sunshine communication, `streaming/` handles audio/video/input sessions, `settings/` stores QSettings-backed preferences, `gui/` contains QML views, and `res/`, `shaders/`, and `languages/` hold assets and translations. Supporting qmake projects live in `moonlight-common-c/`, `qmdnsengine/`, `h264bitstream/`, `soundio/`, and `AntiHooking/`. Packaging and CI assets are in `scripts/`, `.github/`, `wix/`, and `docs/`.
+linuxmis is a Qt/C++ desktop streaming client. The root `artemis.pro` qmake project ties together the app and bundled libraries. Main code lives in `app/`: `backend/` handles GameStream/Linuxmis/Sunshine communication, `streaming/` handles audio/video/input sessions, `settings/` stores QSettings-backed preferences, `gui/` contains QML views, and `res/`, `shaders/`, and `languages/` hold assets and translations. Supporting qmake projects live in `moonlight-common-c/`, `qmdnsengine/`, `h264bitstream/`, `soundio/`, and `AntiHooking/`. Packaging and CI assets are in `scripts/`, `.github/`, `wix/`, and `docs/`.
 
 ## Build, Test, and Development Commands
 
@@ -21,7 +21,7 @@ Follow the existing Qt/C++ style: 4-space indentation, nearby brace style, `Pasc
 
 ## Testing Guidelines
 
-There is no single mandatory test runner. Use targeted checks for the area changed: `nix build`, `nix flake check --no-build`, and focused helpers such as `test_hash.py`, `test_otp_hash.cpp`, or OTP pairing test sources when relevant. For streaming, renderer, or UI changes, launch `./result/bin/linuxmis` and start a real stream against Apollo or Sunshine.
+There is no single mandatory test runner. Use targeted checks for the area changed: `nix build`, `nix flake check --no-build`, and focused helpers such as `test_hash.py`, `test_otp_hash.cpp`, or OTP pairing test sources when relevant. For streaming, renderer, or UI changes, launch `./result/bin/linuxmis` and start a real stream against Linuxmis or Sunshine.
 
 ## Commit & Pull Request Guidelines
 

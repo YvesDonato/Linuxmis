@@ -3,6 +3,7 @@ import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
 import QtQuick.Window 2.2
 import QtQuick.Controls.Material 2.2
+import "TokyoNightTheme.js" as TokyoNight
 
 import ComputerManager 1.0
 import AutoUpdateChecker 1.0
@@ -21,6 +22,12 @@ ApplicationWindow {
     id: window
     width: 1280
     height: 600
+    color: TokyoNight.background
+    Material.theme: Material.Dark
+    Material.primary: TokyoNight.surface
+    Material.accent: TokyoNight.accent
+    Material.background: TokyoNight.background
+    Material.foreground: TokyoNight.text
 
     // This function runs prior to creation of the initial StackView item
     function doEarlyInit() {
@@ -28,7 +35,7 @@ ApplicationWindow {
         // in order to improve contrast between GFE's placeholder box art
         // and the background of the app grid.
         if (SystemProperties.usesMaterial3Theme) {
-            Material.background = "#303030"
+            Material.background = TokyoNight.background
         }
 
         SdlGamepadKeyNavigation.enable()
