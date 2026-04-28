@@ -1,0 +1,135 @@
+{
+  "nodes": {
+    "enet": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1751666336,
+        "narHash": "sha256-B8hQDwb5OplDRA6fo2KC47nA8JxICVeOQ2G7rh6mZi8=",
+        "owner": "cgutman",
+        "repo": "enet",
+        "rev": "115a10baa1d7f291ff5b870765610fd3b4a6e43c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cgutman",
+        "repo": "enet",
+        "rev": "115a10baa1d7f291ff5b870765610fd3b4a6e43c",
+        "type": "github"
+      }
+    },
+    "gameControllerDb": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1751517571,
+        "narHash": "sha256-FSA1hsYvMQ49AxWY/sRP1Mx6XthKDVdixEW+JmNNsDU=",
+        "owner": "gabomdq",
+        "repo": "SDL_GameControllerDB",
+        "rev": "7979e7b29261c11ebce2deabc41ed081b6691398",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gabomdq",
+        "repo": "SDL_GameControllerDB",
+        "rev": "7979e7b29261c11ebce2deabc41ed081b6691398",
+        "type": "github"
+      }
+    },
+    "h264bitstream": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1522375494,
+        "narHash": "sha256-BWHUY1Ajt8soQJJh1oBKO/qEHqFuCQ4ZwAkp8Sf7MGc=",
+        "owner": "aizvorski",
+        "repo": "h264bitstream",
+        "rev": "34f3c58afa3c47b6cf0a49308a68cbf89c5e0bff",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aizvorski",
+        "repo": "h264bitstream",
+        "rev": "34f3c58afa3c47b6cf0a49308a68cbf89c5e0bff",
+        "type": "github"
+      }
+    },
+    "libsoundio": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1609187363,
+        "narHash": "sha256-v5R+mFUTTHT+SaKWHhhzn1NIFyih7V82k9Kjy2XuPGA=",
+        "owner": "cgutman",
+        "repo": "libsoundio",
+        "rev": "34bbab80bd4034ba5080921b6ba6d61314126310",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cgutman",
+        "repo": "libsoundio",
+        "rev": "34bbab80bd4034ba5080921b6ba6d61314126310",
+        "type": "github"
+      }
+    },
+    "moonlightCommonC": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1752419574,
+        "narHash": "sha256-9MId7L7A0U0etKtbrP0am9AlfXK6qDm9DPMDjbas1qM=",
+        "owner": "ClassicOldSong",
+        "repo": "moonlight-common-c",
+        "rev": "ad329b240f18826f320ce6a99226b36354b86b59",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ClassicOldSong",
+        "repo": "moonlight-common-c",
+        "rev": "ad329b240f18826f320ce6a99226b36354b86b59",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1777268161,
+        "narHash": "sha256-bxrdOn8SCOv8tN4JbTF/TXq7kjo9ag4M+C8yzzIRYbE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1c3fe55ad329cbcb28471bb30f05c9827f724c76",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "qmdnsengine": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1602733155,
+        "narHash": "sha256-nFfU8CS3Kr826Cj76Db3WhvRKmcB8dplY18rwpMtu7g=",
+        "owner": "cgutman",
+        "repo": "qmdnsengine",
+        "rev": "b7a5a9f225d5e14b39f9fd1f905c4f505cf2ee99",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cgutman",
+        "repo": "qmdnsengine",
+        "rev": "b7a5a9f225d5e14b39f9fd1f905c4f505cf2ee99",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "enet": "enet",
+        "gameControllerDb": "gameControllerDb",
+        "h264bitstream": "h264bitstream",
+        "libsoundio": "libsoundio",
+        "moonlightCommonC": "moonlightCommonC",
+        "nixpkgs": "nixpkgs",
+        "qmdnsengine": "qmdnsengine"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-	<id>com.artemis_desktop.Artemis</id>
+	<id>com.linuxmis.linuxmis</id>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>GPL-3.0+</project_license>
-	<name>Artemis</name>
+	<name>linuxmis</name>
 	<summary>Stream games and other applications from another PC running Sunshine or GeForce Experience</summary>
 
 	<description>
-		<p>Artemis can stream games and other applications from another PC with Sunshine or GeForce Experience software installed.</p>
+		<p>linuxmis can stream games and other applications from another PC with Sunshine or GeForce Experience software installed.</p>
 		<p>Features include:</p>
 		<ul>
 			<li>Hardware accelerated video decoding with VAAPI, VDPAU, and NVDEC support</li>
@@ -821,13 +821,13 @@
 		<category>Qt</category>
 	</categories>
 
-	<developer_name>Artemis Desktop Project</developer_name>
+	<developer_name>linuxmis</developer_name>
 	<update_contact>will@artemis-desktop.org</update_contact>
 
-	<launchable type="desktop-id">com.artemis_desktop.Artemis.desktop</launchable>
+	<launchable type="desktop-id">com.linuxmis.linuxmis.desktop</launchable>
 
 	<provides>
-		<binary>artemis</binary>
+		<binary>linuxmis</binary>
 	</provides>
 
 	<content_rating type="oars-1.0" />

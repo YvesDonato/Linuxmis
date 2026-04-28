@@ -15,6 +15,9 @@ ui_*.h
 build/
 release/
 debug/
+result
+result-*
+.direnv/
 
 # Platform specific
 *.dmg

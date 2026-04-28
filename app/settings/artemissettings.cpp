@@ -17,7 +17,7 @@ ArtemisSettings::ArtemisSettings(QObject *parent)
     }
 
     // Initialize settings
-    QString settingsPath = configPath + "/artemis-settings.ini";
+    QString settingsPath = configPath + "/linuxmis-settings.ini";
     m_settings = new QSettings(settingsPath, QSettings::IniFormat, this);
 
     // Load defaults first, then load saved settings

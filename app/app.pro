@@ -2,10 +2,10 @@ QT += core quick network quickcontrols2 svg
 CONFIG += c++11
 
 unix:!macx {
-    TARGET = artemis
+    TARGET = linuxmis
 } else {
     # On macOS, this is the name displayed in the global menu bar
-    TARGET = Artemis
+    TARGET = linuxmis
 }
 
 include(../globaldefs.pri)
@@ -562,22 +562,22 @@ unix:!macx: {
 
     target.path = $$PREFIX/$$BINDIR/
 
-    desktop.files = deploy/linux/com.artemis_desktop.Artemis.desktop
+    desktop.files = deploy/linux/com.linuxmis.linuxmis.desktop
     desktop.path = $$PREFIX/$$DATADIR/applications/
 
-    icons.files = res/artemis.svg
+    icons.files = res/linuxmis.svg
     icons.path = $$PREFIX/$$DATADIR/icons/hicolor/scalable/apps/
 
-    appstream.files = deploy/linux/com.artemis_desktop.Artemis.appdata.xml
+    appstream.files = deploy/linux/com.linuxmis.linuxmis.appdata.xml
     appstream.path = $$PREFIX/$$DATADIR/metainfo/
 
     INSTALLS += target desktop icons appstream
 }
 win32 {
     RC_ICONS = artemis.ico
-    QMAKE_TARGET_COMPANY = Artemis Desktop Project
-    QMAKE_TARGET_DESCRIPTION = Artemis Game Streaming Client
-    QMAKE_TARGET_PRODUCT = Artemis
+    QMAKE_TARGET_COMPANY = linuxmis
+    QMAKE_TARGET_DESCRIPTION = linuxmis Game Streaming Client
+    QMAKE_TARGET_PRODUCT = linuxmis
 
     CONFIG -= embed_manifest_exe
     QMAKE_LFLAGS += /MANIFEST:embed /MANIFESTINPUT:$${PWD}/Artemis.exe.manifest
