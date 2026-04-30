@@ -1,6 +1,4 @@
 #include <QString>
-#include <QRegularExpression>
-#include <QVersionNumber>
 
 #include <vector>
 
@@ -19,29 +17,6 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-
-namespace {
-QVersionNumber parseMesaGalliumVersion(const QString& vendorString)
-{
-    static const QRegularExpression mesaVersionRegex(QStringLiteral(R"(Mesa Gallium driver\s+(\d+)\.(\d+)(?:\.(\d+))?)"));
-    QRegularExpressionMatch match = mesaVersionRegex.match(vendorString);
-    if (!match.hasMatch()) {
-        return QVersionNumber();
-    }
-
-    int major = match.captured(1).toInt();
-    int minor = match.captured(2).toInt();
-    int patch = match.captured(3).isEmpty() ? 0 : match.captured(3).toInt();
-
-    return QVersionNumber(major, minor, patch);
-}
-
-bool isModernMesaGallium(const QVersionNumber& version)
-{
-    static const QVersionNumber minimumModernMesaVersion(25, 0, 0);
-    return !version.isNull() && QVersionNumber::compare(version, minimumModernMesaVersion) >= 0;
-}
-}
 
 VAAPIRenderer::VAAPIRenderer(int decoderSelectionPass)
     : IFFmpegRenderer(RendererType::VAAPI),
@@ -421,34 +396,10 @@ VAAPIRenderer::initialize(PDECODER_PARAMETERS params)
     }
 
     bool isGalliumDriver = vendorStr.contains("Gallium", Qt::CaseInsensitive);
-    QVersionNumber mesaGalliumVersion = isGalliumDriver ? parseMesaGalliumVersion(vendorStr) : QVersionNumber();
-    bool modernMesaGallium = isModernMesaGallium(mesaGalliumVersion);
-
-    if (isGalliumDriver) {
-        if (!mesaGalliumVersion.isNull()) {
-            QByteArray mesaVersionString = mesaGalliumVersion.toString().toUtf8();
-            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                        "Detected Mesa Gallium VAAPI driver version: %s",
-                        mesaVersionString.constData());
-        }
-        else {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
-                        "Unable to parse Mesa Gallium VAAPI driver version");
-        }
-
-        if (modernMesaGallium && qgetenv("IGNORE_RFI_LATENCY_BUG") != "1") {
-            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                        "Using VAAPI on modern Mesa Gallium driver");
-        }
-    }
-
     // The Snap (core22) and Focal/Jammy Mesa drivers have a bug that causes
     // a large amount of video latency when using more than one reference frame
-    // and severe rendering glitches on my Ryzen 3300U system. Keep the
-    // workaround for old or unknown Gallium driver versions, but allow modern
-    // Mesa Gallium to avoid falling back to much slower decoder paths.
+    // and severe rendering glitches on my Ryzen 3300U system.
     m_HasRfiLatencyBug = isGalliumDriver &&
-                         !modernMesaGallium &&
                          qgetenv("IGNORE_RFI_LATENCY_BUG") != "1";
     if (m_HasRfiLatencyBug) {
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
@@ -461,8 +412,11 @@ VAAPIRenderer::initialize(PDECODER_PARAMETERS params)
         // resolved in the libva2 drivers (VAAPI 1.x). We will try to use VDPAU
         // instead for old VAAPI versions or drivers affected by the RFI latency bug
         // as long as we're not streaming HDR (which is unsupported by VDPAU).
-        if ((major == 0 || (m_HasRfiLatencyBug && !(m_VideoFormat & VIDEO_FORMAT_MASK_10BIT))) &&
-                isGalliumDriver) {
+        bool shouldDeprioritizeForRfiBug =
+                m_HasRfiLatencyBug &&
+                !(m_VideoFormat & VIDEO_FORMAT_MASK_10BIT) &&
+                m_WindowSystem != SDL_SYSWM_WAYLAND;
+        if ((major == 0 || shouldDeprioritizeForRfiBug) && isGalliumDriver) {
             // Fail and let VDPAU pick this up
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                         "Deprioritizing VAAPI on Gallium driver. Set FORCE_VAAPI=1 to override.");

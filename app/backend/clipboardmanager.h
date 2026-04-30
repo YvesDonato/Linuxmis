@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QQmlEngine>
 #include <QCryptographicHash>
+#include <QElapsedTimer>
 
 class NvComputer;
 class NvHTTP;
@@ -77,6 +78,7 @@ public:
     Q_INVOKABLE void onStreamStarted();
     Q_INVOKABLE void onStreamResumed();
     Q_INVOKABLE void onFocusLost();
+    void noteStreamStarted();
 
     // Settings (matches Android preferences)
     Q_INVOKABLE void setMaxClipboardSize(int maxSize);
@@ -129,6 +131,7 @@ private:
 
 private:
     static constexpr int DEFAULT_MAX_SIZE = 1048576; // 1MB (matches Android)
+    static constexpr qint64 STARTUP_FOCUS_SYNC_GRACE_MS = 5000;
     static const QString CLIPBOARD_IDENTIFIER; // Matches Android constant
 
     QClipboard *m_clipboard;
@@ -154,6 +157,7 @@ private:
     QString m_lastSentContent;
     QString m_lastReceivedContent;
     QStringList m_ownContentHashes;
+    QElapsedTimer m_streamStartupTimer;
     bool m_syncInProgress;
     
     // Static instance for singleton pattern

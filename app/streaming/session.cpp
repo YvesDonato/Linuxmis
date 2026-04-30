@@ -1830,6 +1830,10 @@ bool Session::startConnectionAsync()
         return false;
     }
 
+    if (m_ClipboardManager) {
+        m_ClipboardManager->noteStreamStarted();
+    }
+
     emit connectionStarted();
     return true;
 }
@@ -2578,4 +2582,3 @@ DispatchDeferredCleanup:
     // reference.
     QThreadPool::globalInstance()->start(new DeferredSessionCleanupTask(this));
 }
-

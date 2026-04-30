@@ -1559,8 +1559,15 @@ bool FFmpegVideoDecoder::tryInitializeNonHwAccelDecoder(PDECODER_PARAMETERS para
 
 bool FFmpegVideoDecoder::initialize(PDECODER_PARAMETERS params)
 {
-    // Increase log level until the first frame is decoded
-    av_log_set_level(AV_LOG_DEBUG);
+    // Keep FFmpeg startup logging at normal verbosity by default. Raising this
+    // to DEBUG floods the async logger during renderer probing and can delay the
+    // first real frame on some drivers.
+    if (qEnvironmentVariableIntValue("FFMPEG_DEBUG_FIRST_FRAME") != 0) {
+        av_log_set_level(AV_LOG_DEBUG);
+    }
+    else {
+        av_log_set_level(AV_LOG_INFO);
+    }
 
     // First try decoders that the user has manually specified via environment variables.
     // These must output surfaces in one of the formats that one of our renderers supports,
@@ -2014,4 +2021,3 @@ void FFmpegVideoDecoder::renderFrameOnMainThread()
 {
     m_Pacer->renderOnMainThread();
 }
-

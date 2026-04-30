@@ -218,9 +218,20 @@ void ClipboardManager::onStreamResumed()
 void ClipboardManager::onFocusLost()
 {
     if (m_smartSyncEnabled && m_bidirectionalSync) {
+        if (m_streamStartupTimer.isValid() &&
+            m_streamStartupTimer.elapsed() < STARTUP_FOCUS_SYNC_GRACE_MS) {
+            qDebug() << "ClipboardManager: Focus lost during stream startup, skipping clipboard download";
+            return;
+        }
+
         qDebug() << "ClipboardManager: Focus lost, downloading clipboard";
         getClipboard();
     }
+}
+
+void ClipboardManager::noteStreamStarted()
+{
+    m_streamStartupTimer.restart();
 }
 
 void ClipboardManager::setMaxClipboardSize(int maxSize)
