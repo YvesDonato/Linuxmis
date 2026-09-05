@@ -10,6 +10,12 @@
 #include "streaming/video/ffmpeg-renderers/pacer/pacer.h"
 #include "streaming/video/ffmpeg-renderers/pacer/waylandvsyncsource.h"
 #include "streaming/video/ffmpeg-renderers/eglvid.h"
+#include "streaming/mangonativesplit.h"
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QFile>
+#include <QStandardPaths>
 #include <SDL_syswm.h>
 #endif
 
@@ -19,6 +25,22 @@ static int pollingRefs, appRequests, quitRequests, manualRequests;
 static bool failAppList, failContext;
 static const char* failedThread = "";
 static int displays = 2;
+
+static QJsonObject nativeClient(int width = 1920, int height = 1080)
+{
+    return {{"pid", QCoreApplication::applicationPid()}, {"appid", "com.linuxmis.linuxmis"},
+            {"title", MangoNativeSplit::WindowTitle}, {"monitor", "DP-2"},
+            {"is_floating", false}, {"is_fullscreen", false},
+            {"width", width}, {"height", height}, {"x", 3398 - width}, {"y", (1440 - height) / 2},
+            {"reservation", QJsonObject{{"status", "accepted"}, {"requested_width", width},
+             {"requested_height", height}, {"scale", 1}, {"reason", QJsonValue()},
+             {"usable_bounds", QJsonObject{{"x", 0}, {"y", 0}, {"width", 3398}, {"height", 1440}}}}}};
+}
+
+static QByteArray nativeReply(QJsonArray clients)
+{
+    return QJsonDocument(QJsonObject{{"clients", clients}}).toJson(QJsonDocument::Compact);
+}
 
 // Linker wrappers isolate networking and inject platform failures. All state machines
 // and queue/display management below are the actual application implementations.
@@ -88,6 +110,109 @@ public:
 class Regressions : public QObject {
     Q_OBJECT
 private slots:
+    void nativeSplitValidatesCompositorGeometry() {
+        using ReservationState = MangoNativeSplit::ReservationState;
+        auto check = [](QJsonObject client, QSize size) {
+            return MangoNativeSplit::parseReply(nativeReply({client}), QCoreApplication::applicationPid(), size);
+        };
+        for (QSize size : {QSize(1920, 1080), QSize(1920, 1440), QSize(2758, 1440)}) {
+            QCOMPARE(check(nativeClient(size.width(), size.height()), size).status, ReservationState::Accepted);
+        }
+        for (QSize size : {QSize(2759, 1440), QSize(1920, 1441), QSize(0, 1080)}) {
+            QCOMPARE(check(nativeClient(size.width(), size.height()), size).status, ReservationState::Rejected);
+        }
+        auto client = nativeClient();
+        client["x"] = 0;
+        QCOMPARE(check(client, QSize(1920, 1080)).status, ReservationState::Rejected);
+        client = nativeClient();
+        client["width"] = 1920.5;
+        QCOMPARE(check(client, QSize(1920, 1080)).status, ReservationState::Rejected);
+        client = nativeClient();
+        client["monitor"] = "eDP-1";
+        QCOMPARE(check(client, QSize(1920, 1080)).status, ReservationState::Rejected);
+        client = nativeClient();
+        client.remove("reservation");
+        QCOMPARE(check(client, QSize(1920, 1080)).status, ReservationState::Rejected);
+        QCOMPARE(check(nativeClient(), QSize(1280, 720)).status, ReservationState::Pending);
+        QCOMPARE(MangoNativeSplit::parseReply(nativeReply({}), QCoreApplication::applicationPid(), QSize(1920, 1080)).status, ReservationState::Pending);
+        QCOMPARE(MangoNativeSplit::parseReply("broken JSON", 1, QSize(1920, 1080)).status, ReservationState::Rejected);
+        QCOMPARE(MangoNativeSplit::parseReply(nativeReply({nativeClient(), nativeClient()}), QCoreApplication::applicationPid(), QSize(1920, 1080)).status, ReservationState::Rejected);
+        for (const char* reason : {"too_large", "output_unavailable", "unsupported_scale", "region_occupied"}) {
+            client = nativeClient();
+            client["reservation"] = QJsonObject{{"status", "rejected"}, {"reason", reason}};
+            auto result = check(client, QSize(1920, 1080));
+            QCOMPARE(result.status, ReservationState::Rejected);
+            QVERIFY(!result.error.isEmpty());
+        }
+    }
+
+    void nativeSplitQueryAndPresentationGate() {
+        struct RestorePath {
+            QByteArray path = qgetenv("PATH");
+            ~RestorePath() { qputenv("PATH", path); }
+        } restore;
+        QTemporaryDir executables;
+        QVERIFY(executables.isValid());
+        const auto shell = QStandardPaths::findExecutable("sh").toUtf8();
+        QVERIFY(!shell.isEmpty());
+        auto script = [&](QByteArray body) {
+            QFile file(executables.filePath("mmsg"));
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) return false;
+            file.write("#!" + shell + "\n" + body + "\n");
+            return file.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+        };
+        QVERIFY(script("printf '%s' '" + nativeReply({nativeClient()}) + "'"));
+        qputenv("PATH", executables.path().toUtf8() + ":" + restore.path);
+        QCOMPARE(SDL_InitSubSystem(SDL_INIT_VIDEO), 0);
+        SDL_Window* window = SDL_CreateWindow("native test", 0, 0, 1920, 1080, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
+        QVERIFY(window);
+        {
+            MangoNativeSplit split(window, QSize(1920, 1080));
+            QVERIFY(!split.canPresentFrame(1920, 1080));
+            split.begin();
+            QElapsedTimer timer;
+            timer.start();
+            while (!split.accepted() && timer.elapsed() < 2500) {
+                QVERIFY2(split.poll().isEmpty(), "native split query failed");
+                QTest::qWait(10);
+            }
+            QVERIFY(split.accepted());
+            QVERIFY(split.canPresentFrame(1920, 1080));
+            SDL_FlushEvents(SDL_USEREVENT, SDL_USEREVENT);
+            QVERIFY(!split.canPresentFrame(1280, 720));
+            QVERIFY(!split.canPresentFrame(1280, 720));
+            SDL_Event event;
+            QCOMPARE(SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_USEREVENT, SDL_USEREVENT), 1);
+            QCOMPARE(event.user.code, MangoNativeSplit::RecheckEvent);
+            QCOMPARE(int(intptr_t(event.user.data1)), 1280);
+            QCOMPARE(SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_USEREVENT, SDL_USEREVENT), 0);
+
+            QVERIFY(script("printf '%s' '" + nativeReply({}) + "'"));
+            split.begin();
+            QString error;
+            timer.restart();
+            while (error.isEmpty() && timer.elapsed() < 2500) {
+                error = split.poll();
+                QTest::qWait(10);
+            }
+            QVERIFY(error.contains("Timed out"));
+            QVERIFY(!split.accepted());
+
+            QVERIFY(script("exec sleep 5"));
+            split.begin();
+            error.clear();
+            timer.restart();
+            while (error.isEmpty() && timer.elapsed() < 1000) {
+                error = split.poll();
+                QTest::qWait(10);
+            }
+            QVERIFY(error.contains("did not respond"));
+        }
+        QVERIFY(!MangoNativeSplit::fromWindow(window));
+        SDL_DestroyWindow(window);
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    }
+
     void init() {
         hosts.clear();
         apps.clear();

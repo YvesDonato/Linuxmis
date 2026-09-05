@@ -205,6 +205,7 @@ SOURCES += \
     gui/computermodel.cpp \
     gui/appmodel.cpp \
     streaming/streamutils.cpp \
+    streaming/mangonativesplit.cpp \
     backend/autoupdatechecker.cpp \
     path.cpp \
     settings/mappingmanager.cpp \
@@ -248,6 +249,7 @@ HEADERS += \
     gui/appmodel.h \
     streaming/video/decoder.h \
     streaming/streamutils.h \
+    streaming/mangonativesplit.h \
     backend/autoupdatechecker.h \
     path.h \
     settings/mappingmanager.h \

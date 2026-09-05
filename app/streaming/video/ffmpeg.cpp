@@ -1,6 +1,7 @@
 #include <Limelight.h>
 #include "ffmpeg.h"
 #include "streaming/session.h"
+#include "streaming/mangonativesplit.h"
 #include "backend/systemproperties.h"
 #include "settings/streamingpreferences.h"
 
@@ -327,6 +328,14 @@ void FFmpegVideoDecoder::reset()
 
 bool FFmpegVideoDecoder::initializeRendererInternal(IFFmpegRenderer* renderer, PDECODER_PARAMETERS params)
 {
+    // Vulkan's waitToRender() acquires a swapchain frame that cannot be dropped
+    // by the native presentation gate. EGL/SDL can safely hold video back.
+    if (MangoNativeSplit::fromWindow(params->window) &&
+            renderer->getRendererType() == IFFmpegRenderer::RendererType::Vulkan) {
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Using EGL/SDL instead of Vulkan for the Mango native split");
+        return false;
+    }
+
     if (renderer->getRendererType() != IFFmpegRenderer::RendererType::Unknown &&
             m_FailedRenderers.find(renderer->getRendererType()) != m_FailedRenderers.end()) {
         SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,

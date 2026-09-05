@@ -1328,4 +1328,51 @@
         <translation>உங்கள் புரவலன் கணினியின் ஐபி முகவரியை உள்ளிடவும்:</translation>
     </message>
 </context>
+<context>
+    <name>MangoNativeSplit</name>
+    <message>
+        <source>Mango did not confirm a pixel-exact split. Install the matching patched Mango package and restart the Mango session.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The stream is too large for a pixel-exact split on DP-2. Choose a smaller resolution that leaves at least 640 pixels for local apps.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The pixel-exact split requires DP-2 to be enabled at scale 1.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Another stream already occupies the native split. Close it before starting another stream on this workspace.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Timed out waiting for Mango to reserve a pixel-exact stream region. Check that the matching patched Mango package is running.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The Mango native split requires mmsg on PATH.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mango's window query did not respond. The native split could not be verified.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Unable to query Mango's native split. Check that the matching patched Mango package is running.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>Mango returned an invalid window query response.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The stream reported invalid dimensions for a native split.</source>
+        <translation type="unfinished" />
+    </message>
+    <message>
+        <source>The Mango native split requires native Wayland. Remove any SDL_VIDEODRIVER override and try again.</source>
+        <translation type="unfinished" />
+    </message>
+</context>
 </TS>

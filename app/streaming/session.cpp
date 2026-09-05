@@ -1,6 +1,8 @@
 #include "session.h"
 #include "settings/streamingpreferences.h"
 #include "streaming/streamutils.h"
+#include "streaming/mangonativesplit.h"
+#include <memory>
 #include "backend/richpresencemanager.h"
 #include "backend/quickmenumanager.h"
 #include "backend/servercommandmanager.h"
@@ -353,6 +355,10 @@ bool Session::chooseDecoder(StreamingPreferences::VideoDecoderSelection vds,
 
 int Session::drSetup(int videoFormat, int width, int height, int frameRate, void *, int)
 {
+    if (s_ActiveSession->m_NativeSplitEnabled && (width <= 0 || height <= 0 || width > 32767 || height > 32767)) {
+        emit s_ActiveSession->displayLaunchError(MangoNativeSplit::tr("The stream reported invalid dimensions for a native split."));
+        return -1;
+    }
     s_ActiveSession->m_ActiveVideoFormat = videoFormat;
     s_ActiveSession->m_ActiveVideoWidth = width;
     s_ActiveSession->m_ActiveVideoHeight = height;
@@ -592,7 +598,8 @@ bool Session::populateDecoderProperties(SDL_Window* window)
 
 Session::Session(NvComputer* computer, NvApp& app, StreamingPreferences *preferences)
     : m_Preferences(preferences ? preferences : StreamingPreferences::get()),
-      m_IsFullScreen(m_Preferences->windowMode != StreamingPreferences::WM_WINDOWED || !WMUtils::isRunningDesktopEnvironment()),
+      m_NativeSplitEnabled(MangoNativeSplit::isEnabled()),
+      m_IsFullScreen(!m_NativeSplitEnabled && (m_Preferences->windowMode != StreamingPreferences::WM_WINDOWED || !WMUtils::isRunningDesktopEnvironment())),
       m_Computer(computer),
       m_App(app),
       m_Window(nullptr),
@@ -665,6 +672,12 @@ bool Session::initialize()
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "SDL_InitSubSystem(SDL_INIT_VIDEO) failed: %s",
                      SDL_GetError());
+        return false;
+    }
+
+    if (m_NativeSplitEnabled && strcmp(SDL_GetCurrentVideoDriver(), "wayland") != 0) {
+        emit displayLaunchError(MangoNativeSplit::tr("The Mango native split requires native Wayland. Remove any SDL_VIDEODRIVER override and try again."));
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
         return false;
     }
 
@@ -1450,6 +1463,13 @@ void Session::getWindowDimensions(int& x, int& y,
         }
     }
 
+    if (m_NativeSplitEnabled) {
+        width = m_StreamConfig.width;
+        height = m_StreamConfig.height;
+        x = y = SDL_WINDOWPOS_UNDEFINED;
+        return;
+    }
+
     SDL_Rect usableBounds;
     if (SDL_GetDisplayUsableBounds(displayIndex, &usableBounds) == 0) {
         // Don't use more than 80% of the display to leave room for system UI
@@ -1611,6 +1631,8 @@ void Session::updateOptimalWindowDisplayMode()
 
 void Session::toggleFullscreen()
 {
+    if (m_NativeSplitEnabled) return;
+
     bool fullScreen = !(SDL_GetWindowFlags(m_Window) & m_FullScreenFlag);
 
 #if defined(Q_OS_WIN32) || defined(Q_OS_DARWIN)
@@ -1904,6 +1926,7 @@ void Session::exec(QWindow* qtWindow)
 
 void Session::execInternal()
 {
+    std::unique_ptr<MangoNativeSplit> nativeSplit;
     // Complete initialization in this deferred context to avoid
     // calling expensive functions in the constructor (during the
     // process of loading the StreamSegue).
@@ -1959,6 +1982,12 @@ void Session::execInternal()
     int x, y, width, height;
     getWindowDimensions(x, y, width, height);
 
+    if (m_NativeSplitEnabled) {
+        width = m_ActiveVideoWidth;
+        height = m_ActiveVideoHeight;
+        m_IsFullScreen = false;
+    }
+
 #ifdef STEAM_LINK
     // We need a little delay before creating the window or we will trigger some kind
     // of graphics driver bug on Steam Link that causes a jagged overlay to appear in
@@ -1973,10 +2002,11 @@ void Session::execInternal()
 
     // We always want a resizable window with High DPI enabled
     Uint32 defaultWindowFlags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
+    if (m_NativeSplitEnabled) defaultWindowFlags |= SDL_WINDOW_BORDERLESS;
 
     // If we're starting in windowed mode and the Moonlight GUI is maximized or
     // minimized, match that with the streaming window.
-    if (!m_IsFullScreen && m_QtWindow != nullptr) {
+    if (!m_NativeSplitEnabled && !m_IsFullScreen && m_QtWindow != nullptr) {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
         // Qt 5.10+ can propagate multiple states together
         if (m_QtWindow->windowStates() & Qt::WindowMaximized) {
@@ -2003,6 +2033,8 @@ void Session::execInternal()
 #else
     std::string windowName = QString(m_Computer->name + " - Moonlight").toStdString();
 #endif
+
+    if (m_NativeSplitEnabled) windowName = MangoNativeSplit::WindowTitle;
 
     m_Window = SDL_CreateWindow(windowName.c_str(),
                                 x,
@@ -2066,6 +2098,10 @@ void Session::execInternal()
     }
 #endif
 
+    if (m_NativeSplitEnabled) {
+        nativeSplit.reset(new MangoNativeSplit(m_Window, QSize(width, height)));
+        m_InputHandler->setStreamSize(width, height);
+    }
     m_InputHandler->setWindow(m_Window);
 
     // Set window geometry for QuickMenuManager
@@ -2165,6 +2201,14 @@ void Session::execInternal()
     // because we want to suspend all Qt processing until the stream is over.
     SDL_Event event;
     for (;;) {
+        if (nativeSplit) {
+            const auto error = nativeSplit->poll();
+            if (!error.isEmpty()) {
+                m_UnexpectedTermination = true;
+                emit displayLaunchError(error);
+                goto DispatchDeferredCleanup;
+            }
+        }
 #if SDL_VERSION_ATLEAST(2, 0, 18) && !defined(STEAM_LINK)
         // SDL 2.0.18 has a proper wait event implementation that uses platform
         // support to block on events rather than polling on Windows, macOS, X11,
@@ -2175,7 +2219,7 @@ void Session::execInternal()
         // NB: This behavior was introduced in SDL 2.0.16, but had a few critical
         // issues that could cause indefinite timeouts, delayed joystick detection,
         // and other problems.
-        if (!SDL_WaitEventTimeout(&event, 1000)) {
+        if (!SDL_WaitEventTimeout(&event, nativeSplit && nativeSplit->waiting() ? 10 : 1000)) {
             presence.runCallbacks();
             continue;
         }
@@ -2198,12 +2242,38 @@ void Session::execInternal()
 #endif
         switch (event.type) {
         case SDL_QUIT:
+            if (nativeSplit) {
+                const auto error = nativeSplit->rejectionOnClose();
+                if (!error.isEmpty()) emit displayLaunchError(error);
+                if (!error.isEmpty() || !nativeSplit->accepted()) m_UnexpectedTermination = true;
+            }
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
                         "Quit event received");
             goto DispatchDeferredCleanup;
 
         case SDL_USEREVENT:
             switch (event.user.code) {
+            case MangoNativeSplit::RecheckEvent:
+                if (nativeSplit) {
+                    const int videoWidth = int(intptr_t(event.user.data1));
+                    const int videoHeight = int(intptr_t(event.user.data2));
+                    if (videoWidth <= 0 || videoHeight <= 0 || videoWidth > 32767 || videoHeight > 32767) {
+                        m_UnexpectedTermination = true;
+                        emit displayLaunchError(MangoNativeSplit::tr("The stream reported invalid dimensions for a native split."));
+                        goto DispatchDeferredCleanup;
+                    }
+                    m_ActiveVideoWidth = videoWidth;
+                    m_ActiveVideoHeight = videoHeight;
+                    nativeSplit->setSize(QSize(videoWidth, videoHeight));
+                    m_InputHandler->setStreamSize(videoWidth, videoHeight);
+                    m_InputHandler->updatePointerRegionLock();
+                    // Recreate even when the backend supports resize in place:
+                    // its neutral buffer commits the new Wayland size hints.
+                    SDL_Event reset = {};
+                    reset.type = SDL_RENDER_TARGETS_RESET;
+                    SDL_PushEvent(&reset);
+                }
+                break;
             case SDL_CODE_FRAME_READY:
                 if (m_VideoDecoder != nullptr) {
                     m_VideoDecoder->renderFrameOnMainThread();
@@ -2314,9 +2384,11 @@ void Session::execInternal()
                 break;
             }
 
+            if (nativeSplit && !nativeSplit->waiting()) nativeSplit->begin();
+
             // Allow the renderer to handle the state change without being recreated
             if (m_VideoDecoder) {
-                bool forceRecreation = false;
+                bool forceRecreation = m_NativeSplitEnabled;
 
                 WINDOW_STATE_CHANGE_INFO windowChangeInfo = {};
                 windowChangeInfo.window = m_Window;
@@ -2369,6 +2441,8 @@ void Session::execInternal()
             // Fall through
         case SDL_RENDER_DEVICE_RESET:
         case SDL_RENDER_TARGETS_RESET:
+
+            if (nativeSplit) nativeSplit->block();
 
             if (event.type != SDL_WINDOWEVENT) {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
@@ -2428,6 +2502,10 @@ void Session::execInternal()
                     emit displayLaunchError(tr("Unable to initialize video decoder. Please check your streaming settings and try again."));
                     goto DispatchDeferredCleanup;
                 }
+
+                // prepareToRender() has now mapped a neutral buffer. Mango can
+                // reserve the surface before Pacer is allowed to show video.
+                if (nativeSplit) nativeSplit->begin();
 
                 // As of SDL 2.0.12, SDL_RecreateWindow() doesn't carry over mouse capture
                 // or mouse hiding state to the new window. By capturing after the decoder
@@ -2559,6 +2637,7 @@ DispatchDeferredCleanup:
 
     // This must be called after the decoder is deleted, because
     // the renderer may want to interact with the window
+    nativeSplit.reset();
     SDL_DestroyWindow(m_Window);
 
     if (iconSurface != nullptr) {

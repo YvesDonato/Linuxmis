@@ -8,6 +8,8 @@
 #include <QWaitCondition>
 #include <atomic>
 
+class MangoNativeSplit;
+
 class IVsyncSource {
 public:
     virtual ~IVsyncSource() {}
@@ -65,6 +67,7 @@ private:
 
     IVsyncSource* m_VsyncSource;
     IFFmpegRenderer* m_VsyncRenderer;
+    MangoNativeSplit* m_NativeSplit;
     int m_MaxVideoFps;
     int m_DisplayFps;
     PVIDEO_STATS m_VideoStats;

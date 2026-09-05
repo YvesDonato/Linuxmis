@@ -1,5 +1,6 @@
 #include "pacer.h"
 #include "streaming/streamutils.h"
+#include "streaming/mangonativesplit.h"
 
 #ifdef Q_OS_WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -34,6 +35,7 @@ Pacer::Pacer(IFFmpegRenderer* renderer, PVIDEO_STATS videoStats) :
     m_Stopping(false),
     m_VsyncSource(nullptr),
     m_VsyncRenderer(renderer),
+    m_NativeSplit(nullptr),
     m_MaxVideoFps(0),
     m_DisplayFps(0),
     m_VideoStats(videoStats)
@@ -261,6 +263,7 @@ void Pacer::handleVsync(int timeUntilNextVsyncMillis)
 
 bool Pacer::initialize(SDL_Window* window, int maxVideoFps, bool enablePacing)
 {
+    m_NativeSplit = MangoNativeSplit::fromWindow(window);
     m_MaxVideoFps = maxVideoFps;
     m_DisplayFps = StreamUtils::getDisplayRefreshRate(window);
     m_RendererAttributes = m_VsyncRenderer->getRendererAttributes();
@@ -346,6 +349,11 @@ void Pacer::signalVsync()
 
 void Pacer::renderFrame(AVFrame* frame)
 {
+    if (m_NativeSplit && !m_NativeSplit->canPresentFrame(frame->width, frame->height)) {
+        m_VideoStats->pacerDroppedFrames++;
+        av_frame_free(&frame);
+        return;
+    }
     // Count time spent in Pacer's queues
     Uint32 beforeRender = SDL_GetTicks();
     m_VideoStats->totalPacerTime += beforeRender - frame->pkt_dts;
