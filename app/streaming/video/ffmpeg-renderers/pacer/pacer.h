@@ -6,6 +6,7 @@
 #include <QQueue>
 #include <QMutex>
 #include <QWaitCondition>
+#include <atomic>
 
 class IVsyncSource {
 public:
@@ -60,7 +61,7 @@ private:
     QWaitCondition m_VsyncSignalled;
     SDL_Thread* m_RenderThread;
     SDL_Thread* m_VsyncThread;
-    bool m_Stopping;
+    std::atomic<bool> m_Stopping;
 
     IVsyncSource* m_VsyncSource;
     IFFmpegRenderer* m_VsyncRenderer;

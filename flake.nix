@@ -168,6 +168,19 @@
               runHook postBuild
             '';
 
+            doCheck = true;
+            checkPhase = ''
+              runHook preCheck
+              pushd app
+              qmake -o Makefile.tests regression-tests.pro \
+                CONFIG+=release CONFIG+=disable-prebuilts CONFIG+=disable-libplacebo
+              make -f Makefile.tests -j$NIX_BUILD_CORES release
+              QT_PLUGIN_PATH="${qt.qtbase}/${qt.qtbase.qtPluginPrefix}" \
+                timeout 60 ./linuxmis-regression-tests -o -,txt
+              popd
+              runHook postCheck
+            '';
+
             installPhase = ''
               runHook preInstall
               make install
@@ -200,22 +213,6 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          runtimeLibs = with pkgs; [
-            SDL2
-            SDL2_ttf
-            alsa-lib
-            ffmpeg_6
-            libGL
-            libdrm
-            libpulseaudio
-            libva
-            libvdpau
-            libxkbcommon
-            openssl
-            opus
-            wayland
-            libx11
-          ];
         in
         {
           default = pkgs.mkShell {
@@ -227,8 +224,6 @@
               gnumake
               pkg-config
             ];
-
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
 
             shellHook = ''
               if [ ! -d qmdnsengine/qmdnsengine/src ]; then

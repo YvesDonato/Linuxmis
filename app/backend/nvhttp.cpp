@@ -10,6 +10,7 @@
 #include <QtNetwork/QNetworkReply>
 #include <QEventLoop>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QXmlStreamReader>
 #include <QSslKey>
 #include <QImageReader>
@@ -548,7 +549,7 @@ NvHTTP::openConnection(QUrl baseUrl,
     // Suppress debug output for polling requests to reduce log noise
     bool suppressDebugOutput = (logLevel == NvLogLevel::NVLL_NONE);
     if (!suppressDebugOutput) {
-        qDebug() << "NvHTTP::openConnection - URL:" << baseUrl.toString() << "Command:" << command << "Arguments:" << arguments;
+        qDebug() << "NvHTTP::openConnection - URL:" << baseUrl.toString() << "Command:" << command;
     }
 
     // Port must be set
@@ -598,6 +599,8 @@ NvHTTP::openConnection(QUrl baseUrl,
     QT_WARNING_POP
 #endif
 
+    QElapsedTimer elapsed;
+    elapsed.start();
     QNetworkReply* reply = m_Nam.get(request);
 
     // Run the request with a timeout if requested
@@ -608,7 +611,7 @@ NvHTTP::openConnection(QUrl baseUrl,
         QTimer::singleShot(timeoutMs, &loop, &QEventLoop::quit);
     }
     if (logLevel >= NvLogLevel::NVLL_VERBOSE) {
-        qInfo() << "Executing request:" << url.toString();
+        qInfo() << "Executing request:" << baseUrl.toString() << command;
     }
     loop.exec(QEventLoop::ExcludeUserInputEvents);
 
@@ -616,7 +619,8 @@ NvHTTP::openConnection(QUrl baseUrl,
     if (!reply->isFinished())
     {
         if (logLevel >= NvLogLevel::NVLL_ERROR) {
-            qWarning() << "Aborting timed out request for" << url.toString();
+            qWarning() << "Aborting request for" << baseUrl.toString() << command
+                       << "after" << elapsed.elapsed() << "ms";
         }
         reply->abort();
     }
@@ -629,7 +633,8 @@ NvHTTP::openConnection(QUrl baseUrl,
     if (reply->error() != QNetworkReply::NoError)
     {
         if (logLevel >= NvLogLevel::NVLL_ERROR) {
-            qWarning() << command << "request failed with error:" << reply->error();
+            qWarning() << command << "at" << baseUrl.toString() << "failed after"
+                       << elapsed.elapsed() << "ms with error:" << reply->error();
         }
 
         if (reply->error() == QNetworkReply::SslHandshakeFailedError) {
@@ -651,6 +656,10 @@ NvHTTP::openConnection(QUrl baseUrl,
         }
     }
 
+    if (!suppressDebugOutput) {
+        qInfo() << command << "at" << baseUrl.toString() << "completed in"
+                << elapsed.elapsed() << "ms";
+    }
     return reply;
 }
 

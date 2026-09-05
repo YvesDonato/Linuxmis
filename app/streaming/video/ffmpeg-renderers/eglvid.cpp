@@ -83,8 +83,7 @@ EGLRenderer::EGLRenderer(IFFmpegRenderer *backendRenderer)
         m_eglClientWaitSync(nullptr),
         m_GlesMajorVersion(0),
         m_GlesMinorVersion(0),
-        m_HasExtUnpackSubimage(false),
-        m_DummyRenderer(nullptr)
+        m_HasExtUnpackSubimage(false)
 {
     SDL_assert(backendRenderer);
     SDL_assert(backendRenderer->canExportEGL());
@@ -97,9 +96,8 @@ EGLRenderer::EGLRenderer(IFFmpegRenderer *backendRenderer)
 
 EGLRenderer::~EGLRenderer()
 {
-    if (m_Context) {
-        // Reattach the GL context to the main thread for destruction
-        SDL_GL_MakeCurrent(m_Window, m_Context);
+    // Only issue GL cleanup commands if our context is current.
+    if (m_Context && SDL_GL_MakeCurrent(m_Window, m_Context) == 0) {
         if (m_LastRenderSync != EGL_NO_SYNC) {
             SDL_assert(m_eglDestroySync != nullptr);
             m_eglDestroySync(m_EGLDisplay, m_LastRenderSync);
@@ -127,11 +125,9 @@ EGLRenderer::~EGLRenderer()
                 glDeleteBuffers(1, &m_OverlayVbos[i]);
             }
         }
-        SDL_GL_DeleteContext(m_Context);
     }
-
-    if (m_DummyRenderer) {
-        SDL_DestroyRenderer(m_DummyRenderer);
+    if (m_Context) {
+        SDL_GL_DeleteContext(m_Context);
     }
 
     av_frame_free(&m_LastFrame);
@@ -449,8 +445,8 @@ bool EGLRenderer::initialize(PDECODER_PARAMETERS params)
         return false;
     }
 
-    m_DummyRenderer = SDL_CreateRenderer(m_Window, renderIndex, SDL_RENDERER_ACCELERATED);
-    if (!m_DummyRenderer) {
+    SDL_Renderer* dummyRenderer = SDL_CreateRenderer(m_Window, renderIndex, SDL_RENDERER_ACCELERATED);
+    if (!dummyRenderer) {
         // Print the error here (before it gets clobbered), but ensure that we flush window
         // events just in case SDL re-created the window before eventually failing.
         EGL_LOG(Error, "SDL_CreateRenderer() failed: %s", SDL_GetError());
@@ -474,10 +470,14 @@ bool EGLRenderer::initialize(PDECODER_PARAMETERS params)
     }
 
     // Now we finally bail if we failed during SDL_CreateRenderer() above.
-    if (!m_DummyRenderer) {
+    if (!dummyRenderer) {
         m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
         return false;
     }
+
+    // The dummy renderer only configures the window for GLES. Keeping it alive
+    // lets SDL's window event watcher bind a second context to our EGL surface.
+    SDL_DestroyRenderer(dummyRenderer);
 
     SDL_SysWMinfo info;
     SDL_VERSION(&info.version);
@@ -642,7 +642,10 @@ bool EGLRenderer::initialize(PDECODER_PARAMETERS params)
         EGL_LOG(Error, "OpenGL error: %d", err);
 
     // Detach the context from this thread, so the render thread can attach it
-    SDL_GL_MakeCurrent(m_Window, nullptr);
+    if (SDL_GL_MakeCurrent(m_Window, nullptr) != 0) {
+        EGL_LOG(Error, "Unable to release initialized context: %s", SDL_GetError());
+        return false;
+    }
 
     if (err == GL_NO_ERROR) {
         // If we got a working GL implementation via EGL, avoid using GLX from now on.
@@ -768,14 +771,18 @@ bool EGLRenderer::specialize() {
 void EGLRenderer::cleanupRenderContext()
 {
     // Detach the context from the render thread so the destructor can attach it
-    SDL_GL_MakeCurrent(m_Window, nullptr);
+    if (SDL_GL_MakeCurrent(m_Window, nullptr) != 0) {
+        EGL_LOG(Error, "Unable to release render context: %s", SDL_GetError());
+    }
 }
 
 void EGLRenderer::waitToRender()
 {
     // Ensure our GL context is active on this thread
     // See comment in renderFrame() for more details.
-    SDL_GL_MakeCurrent(m_Window, m_Context);
+    if (!makeCurrent()) {
+        return;
+    }
 
     // Wait for the previous buffer swap to finish before picking the next frame to render.
     // This way we'll get the latest available frame and render it without blocking.
@@ -794,14 +801,19 @@ void EGLRenderer::waitToRender()
 
 void EGLRenderer::prepareToRender()
 {
-    SDL_GL_MakeCurrent(m_Window, m_Context);
+    if (!makeCurrent()) {
+        return;
+    }
     {
         // Draw a black frame until the video stream starts rendering
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT);
         SDL_GL_SwapWindow(m_Window);
     }
-    SDL_GL_MakeCurrent(m_Window, nullptr);
+    if (SDL_GL_MakeCurrent(m_Window, nullptr) != 0) {
+        EGL_LOG(Error, "Unable to release prepared context: %s", SDL_GetError());
+        requestReset();
+    }
 }
 
 void EGLRenderer::renderFrame(AVFrame* frame)
@@ -809,10 +821,10 @@ void EGLRenderer::renderFrame(AVFrame* frame)
     EGLImage imgs[EGL_MAX_PLANES];
 
     // Attach our GL context to the render thread
-    // NB: It should already be current, unless the SDL render event watcher
-    // performs a rendering operation (like a viewport update on resize) on
-    // our fake SDL_Renderer. If it's already current, this is a no-op.
-    SDL_GL_MakeCurrent(m_Window, m_Context);
+    // If it's already current, this is a no-op.
+    if (!makeCurrent()) {
+        return;
+    }
 
     // Find the native read-back format and load the shaders
     if (m_EGLImagePixelFormat == AV_PIX_FMT_NONE) {
@@ -822,19 +834,7 @@ void EGLRenderer::renderFrame(AVFrame* frame)
         SDL_assert(m_EGLImagePixelFormat != AV_PIX_FMT_NONE);
 
         if (!specialize()) {
-            m_EGLImagePixelFormat = AV_PIX_FMT_NONE;
-
-            // Failure to specialize is fatal. We must reset the renderer
-            // to recover successfully.
-            //
-            // Note: This seems to be easy to trigger when transitioning from
-            // maximized mode by dragging the window down on GNOME 42 using
-            // XWayland. Other strategies like calling glGetError() don't seem
-            // to be able to detect this situation for some reason.
-            SDL_Event event;
-            event.type = SDL_RENDER_TARGETS_RESET;
-            SDL_PushEvent(&event);
-
+            requestReset();
             return;
         }
     }
@@ -941,5 +941,37 @@ bool EGLRenderer::testRenderFrame(AVFrame* frame)
     }
 
     m_Backend->freeEGLImages(m_EGLDisplay, imgs);
+
+    // Validate shaders now, while decoder selection can still try another renderer.
+    if (SDL_GL_MakeCurrent(m_Window, m_Context) != 0) {
+        EGL_LOG(Error, "Unable to bind test context: %s", SDL_GetError());
+        return false;
+    }
+    m_EGLImagePixelFormat = m_Backend->getEGLImagePixelFormat();
+    const bool ready = m_EGLImagePixelFormat != AV_PIX_FMT_NONE && specialize();
+    const bool detached = SDL_GL_MakeCurrent(m_Window, nullptr) == 0;
+    return ready && detached;
+}
+
+bool EGLRenderer::makeCurrent()
+{
+    if (m_ResetPending) {
+        return false;
+    }
+    if (SDL_GL_MakeCurrent(m_Window, m_Context) != 0) {
+        EGL_LOG(Error, "Unable to bind render context: %s", SDL_GetError());
+        requestReset();
+        return false;
+    }
     return true;
+}
+
+void EGLRenderer::requestReset()
+{
+    if (!m_ResetPending) {
+        m_ResetPending = true;
+        SDL_Event event = {};
+        event.type = SDL_RENDER_TARGETS_RESET;
+        SDL_PushEvent(&event);
+    }
 }

@@ -557,15 +557,6 @@ bool FFmpegVideoDecoder::completeInitialization(const AVCodec* decoder, enum AVP
     m_StreamFps = params->frameRate;
     m_VideoFormat = params->videoFormat;
 
-    // Don't bother initializing Pacer if we're not actually going to render
-    if (!testFrame) {
-        m_Pacer = new Pacer(m_FrontendRenderer, &m_ActiveWndVideoStats);
-        if (!m_Pacer->initialize(params->window, params->frameRate,
-                                 params->enableFramePacing || (params->enableVsync && (m_FrontendRenderer->getRendererAttributes() & RENDERER_ATTRIBUTE_FORCE_PACING)))) {
-            return false;
-        }
-    }
-
     m_VideoDecoderCtx = avcodec_alloc_context3(decoder);
     if (!m_VideoDecoderCtx) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -750,8 +741,12 @@ bool FFmpegVideoDecoder::completeInitialization(const AVCodec* decoder, enum AVP
         // Tell overlay manager to use this frontend renderer
         Session::get()->getOverlayManager().setOverlayRenderer(m_FrontendRenderer);
 
-        // Allow the renderer to perform final preparations for rendering
-        m_FrontendRenderer->prepareToRender();
+        // Start rendering only after decoder and overlay initialization is complete.
+        m_Pacer = new Pacer(m_FrontendRenderer, &m_ActiveWndVideoStats);
+        if (!m_Pacer->initialize(params->window, params->frameRate,
+                                 params->enableFramePacing || (params->enableVsync && (m_FrontendRenderer->getRendererAttributes() & RENDERER_ATTRIBUTE_FORCE_PACING)))) {
+            return false;
+        }
 
         // Only create the decoder thread when instantiating the decoder for real. It will use APIs from
         // moonlight-common-c that can only be legally called with an established connection.

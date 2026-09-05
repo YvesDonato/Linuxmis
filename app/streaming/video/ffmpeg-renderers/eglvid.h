@@ -24,6 +24,8 @@ public:
 
 private:
 
+    bool makeCurrent();
+    void requestReset();
     void renderOverlay(Overlay::OverlayType type, int viewportWidth, int viewportHeight);
     unsigned compileShader(const char* vertexShaderSrc, const char* fragmentShaderSrc);
     bool compileShaders();
@@ -58,6 +60,7 @@ private:
     int m_GlesMajorVersion;
     int m_GlesMinorVersion;
     bool m_HasExtUnpackSubimage;
+    bool m_ResetPending = false;
 
 #define NV12_PARAM_YUVMAT 0
 #define NV12_PARAM_OFFSET 1
@@ -72,6 +75,4 @@ private:
     int m_OldContextProfileMask;
     int m_OldContextMajorVersion;
     int m_OldContextMinorVersion;
-
-    SDL_Renderer *m_DummyRenderer;
 };

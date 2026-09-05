@@ -5,6 +5,7 @@
 #include <QLibraryInfo>
 #include <QFile>
 #include <QProcess>
+#include <QElapsedTimer>
 
 #include "streaming/session.h"
 #include "streaming/streamutils.h"
@@ -69,15 +70,26 @@ SystemProperties::SystemProperties()
 #endif
 
     unmappedGamepads = SdlInputHandler::getUnmappedGamepads();
+    // Decoder probing is deferred until Settings needs the capabilities.
+}
 
+void SystemProperties::ensureDecoderInfo()
+{
+    if (m_DecoderInfoQueried) {
+        return;
+    }
 
-    // Populate data that requires talking to SDL. We do it all in one shot
-    // and cache the results to speed up future queries on this data.
+    m_DecoderInfoQueried = true;
+    QElapsedTimer timer;
+    timer.start();
     querySdlVideoInfo();
+    qInfo() << "Decoder capability probing completed in" << timer.elapsed() << "ms";
+    emit decoderInfoChanged();
+}
 
-    Q_ASSERT(!monitorRefreshRates.isEmpty());
-    Q_ASSERT(!monitorNativeResolutions.isEmpty());
-    Q_ASSERT(!monitorSafeAreaResolutions.isEmpty());
+int SystemProperties::getDisplayCount() const
+{
+    return monitorNativeResolutions.size();
 }
 
 QRect SystemProperties::getNativeResolution(int displayIndex)
@@ -226,6 +238,10 @@ void SystemProperties::refreshDisplays()
 
 void SystemProperties::refreshDisplaysInternal()
 {
+    monitorNativeResolutions.clear();
+    monitorSafeAreaResolutions.clear();
+    monitorRefreshRates.clear();
+
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "SDL_InitSubSystem(SDL_INIT_VIDEO) failed: %s",
@@ -233,17 +249,20 @@ void SystemProperties::refreshDisplaysInternal()
         return;
     }
 
-    monitorNativeResolutions.clear();
-
     SDL_DisplayMode bestMode;
     for (int displayIndex = 0; displayIndex < SDL_GetNumVideoDisplays(); displayIndex++) {
         SDL_DisplayMode desktopMode;
         SDL_Rect safeArea;
 
+        // Keep indices aligned even when a display has no usable mode.
+        monitorNativeResolutions.append(QRect());
+        monitorSafeAreaResolutions.append(QRect());
+        monitorRefreshRates.append(0);
+
         if (StreamUtils::getNativeDesktopMode(displayIndex, &desktopMode, &safeArea)) {
             if (desktopMode.w <= 8192 && desktopMode.h <= 8192) {
-                monitorNativeResolutions.insert(displayIndex, QRect(0, 0, desktopMode.w, desktopMode.h));
-                monitorSafeAreaResolutions.insert(displayIndex, QRect(0, 0, safeArea.w, safeArea.h));
+                monitorNativeResolutions[displayIndex] = QRect(0, 0, desktopMode.w, desktopMode.h);
+                monitorSafeAreaResolutions[displayIndex] = QRect(0, 0, safeArea.w, safeArea.h);
             }
             else {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
@@ -267,15 +286,16 @@ void SystemProperties::refreshDisplaysInternal()
             // Try to normalize values around our our standard refresh rates.
             // Some displays/OSes report values that are slightly off.
             if (bestMode.refresh_rate >= 58 && bestMode.refresh_rate <= 62) {
-                monitorRefreshRates.append(60);
+                monitorRefreshRates[displayIndex] = 60;
             }
             else if (bestMode.refresh_rate >= 28 && bestMode.refresh_rate <= 32) {
-                monitorRefreshRates.append(30);
+                monitorRefreshRates[displayIndex] = 30;
             }
             else {
-                monitorRefreshRates.append(bestMode.refresh_rate);
+                monitorRefreshRates[displayIndex] = bestMode.refresh_rate;
             }
         }
     }
-}
 
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}

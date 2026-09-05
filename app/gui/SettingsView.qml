@@ -171,15 +171,12 @@ Flickable {
                             SystemProperties.refreshDisplays()
 
                             // Add native and safe area resolutions for all attached displays
-                            var done = false
-                            for (var displayIndex = 0; !done; displayIndex++) {
+                            for (var displayIndex = 0; displayIndex < SystemProperties.getDisplayCount(); displayIndex++) {
                                 var screenRect = SystemProperties.getNativeResolution(displayIndex);
                                 var safeAreaRect = SystemProperties.getSafeAreaResolution(displayIndex);
 
                                 if (screenRect.width === 0) {
-                                    // Exceeded max count of displays
-                                    done = true
-                                    break
+                                    continue
                                 }
 
                                 addDetectedResolution(qsTr("Native"), screenRect)
@@ -658,13 +655,10 @@ Flickable {
 
                         function reinitialize() {
                             // Add native refresh rate for all attached displays
-                            var done = false
-                            for (var displayIndex = 0; !done; displayIndex++) {
+                            for (var displayIndex = 0; displayIndex < SystemProperties.getDisplayCount(); displayIndex++) {
                                 var refreshRate = SystemProperties.getRefreshRate(displayIndex);
                                 if (refreshRate === 0) {
-                                    // Exceeded max count of displays
-                                    done = true
-                                    break
+                                    continue
                                 }
 
                                 addRefreshRateOrdered(fpsListModel, refreshRate, qsTr("%1 FPS").arg(refreshRate), false)

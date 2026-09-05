@@ -61,18 +61,24 @@ ApplicationWindow {
         if (SystemProperties.isWow64) {
             wow64Dialog.open()
         }
-        else if (!SystemProperties.hasHardwareAcceleration && StreamingPreferences.videoDecoderSelection !== StreamingPreferences.VDS_FORCE_SOFTWARE) {
-            if (SystemProperties.isRunningXWayland) {
-                xWaylandDialog.open()
-            }
-            else {
-                noHwDecoderDialog.open()
-            }
-        }
 
         if (SystemProperties.unmappedGamepads) {
             unmappedGamepadDialog.unmappedGamepads = SystemProperties.unmappedGamepads
             unmappedGamepadDialog.open()
+        }
+    }
+
+    Connections {
+        target: SystemProperties
+        function onDecoderInfoChanged() {
+            if (!SystemProperties.hasHardwareAcceleration && StreamingPreferences.videoDecoderSelection !== StreamingPreferences.VDS_FORCE_SOFTWARE) {
+                if (SystemProperties.isRunningXWayland) {
+                    xWaylandDialog.open()
+                }
+                else {
+                    noHwDecoderDialog.open()
+                }
+            }
         }
     }
   
@@ -228,6 +234,10 @@ ApplicationWindow {
 
     function navigateTo(url, objectType)
     {
+        if (objectType === "SettingsView") {
+            SystemProperties.ensureDecoderInfo()
+        }
+
         var existingItem = stackView.find(function(item, index) {
             return qmltypeof(item, objectType)
         })

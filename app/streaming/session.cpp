@@ -448,13 +448,6 @@ void Session::getDecoderInfo(SDL_Window* window,
             isHdrSupported = false;
         }
 
-        // Try AV1 Main8 as fallback to check for general AV1 hardware support
-        // This allows AV1 to work even if 10-bit/HDR is not supported
-        if (chooseDecoder(StreamingPreferences::VDS_FORCE_HARDWARE,
-                          window, VIDEO_FORMAT_AV1_MAIN8, 1920, 1080, 60,
-                          false, false, true, decoder)) {
-            delete decoder;
-        }
     }
 
     // Try a regular hardware accelerated HEVC decoder now
@@ -1693,10 +1686,6 @@ public:
 // Called in a non-main thread
 bool Session::startConnectionAsync()
 {
-    // Wait 1.5 seconds before connecting to let the user
-    // have time to read any messages present on the segue
-    SDL_Delay(1500);
-
     // The UI should have ensured the old game was already quit
     // if we decide to stream a different game.
     Q_ASSERT(m_Computer->currentGameId == 0 ||
@@ -1749,6 +1738,7 @@ bool Session::startConnectionAsync()
     QByteArray siAppVersion = m_Computer->appVersion.toLatin1();
 
     SERVER_INFORMATION hostInfo;
+    LiInitializeServerInformation(&hostInfo);
     hostInfo.address = hostnameStr.data();
     hostInfo.serverInfoAppVersion = siAppVersion.data();
     hostInfo.serverCodecModeSupport = m_Computer->serverCodecModeSupport;

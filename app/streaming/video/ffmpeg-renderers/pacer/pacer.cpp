@@ -43,12 +43,16 @@ Pacer::Pacer(IFFmpegRenderer* renderer, PVIDEO_STATS videoStats) :
 
 Pacer::~Pacer()
 {
-    m_Stopping = true;
+    {
+        QMutexLocker lock(&m_FrameQueueLock);
+        m_Stopping = true;
+        m_PacingQueueNotEmpty.wakeAll();
+        m_VsyncSignalled.wakeAll();
+        m_RenderQueueNotEmpty.wakeAll();
+    }
 
     // Stop the V-sync thread
     if (m_VsyncThread != nullptr) {
-        m_PacingQueueNotEmpty.wakeAll();
-        m_VsyncSignalled.wakeAll();
         SDL_WaitThread(m_VsyncThread, nullptr);
     }
 
@@ -58,7 +62,6 @@ Pacer::~Pacer()
 
     // Stop the render thread
     if (m_RenderThread != nullptr) {
-        m_RenderQueueNotEmpty.wakeAll();
         SDL_WaitThread(m_RenderThread, nullptr);
     }
     else {
@@ -246,7 +249,7 @@ void Pacer::handleVsync(int timeUntilNextVsyncMillis)
             return;
         }
 
-        if (m_Stopping) {
+        if (m_Stopping || m_PacingQueue.isEmpty()) {
             m_FrameQueueLock.unlock();
             return;
         }
@@ -314,12 +317,23 @@ bool Pacer::initialize(SDL_Window* window, int maxVideoFps, bool enablePacing)
                     m_DisplayFps, m_MaxVideoFps);
     }
 
+    // Preparation must release the GL context before the render thread takes it.
+    m_VsyncRenderer->prepareToRender();
+
     if (m_VsyncSource != nullptr) {
         m_VsyncThread = SDL_CreateThread(Pacer::vsyncThread, "PacerVsync", this);
+        if (!m_VsyncThread) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create pacing thread: %s", SDL_GetError());
+            return false;
+        }
     }
 
     if (m_VsyncRenderer->isRenderThreadSupported()) {
         m_RenderThread = SDL_CreateThread(Pacer::renderThread, "PacerRender", this);
+        if (!m_RenderThread) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create render thread: %s", SDL_GetError());
+            return false;
+        }
     }
 
     return true;

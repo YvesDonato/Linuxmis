@@ -1,13 +1,15 @@
 #include "startstream.h"
 #include "backend/computermanager.h"
 #include "backend/computerseeker.h"
+#include "backend/nvhttp.h"
 #include "streaming/session.h"
 
 #include <QCoreApplication>
 #include <QTimer>
+#include <QPointer>
 
 #define COMPUTER_SEEK_TIMEOUT 30000
-#define APP_SEEK_TIMEOUT 10000
+#define APP_QUIT_TIMEOUT 30000
 
 namespace CliStartStream
 {
@@ -16,6 +18,8 @@ enum State {
     StateInit,
     StateSeekComputer,
     StateSeekApp,
+    StateAwaitQuit,
+    StateQuitting,
     StateStartSession,
     StateFailure,
 };
@@ -51,9 +55,6 @@ public:
     void handleEvent(Event event)
     {
         Q_Q(Launcher);
-        Session* session;
-        NvApp app;
-
         switch (event.type) {
         // Occurs when CliStartStreamSegue becomes visible and the UI calls launcher's execute()
         case Event::Executed:
@@ -66,14 +67,13 @@ public:
                            q, &Launcher::onComputerFound);
                 q->connect(m_ComputerSeeker, &ComputerSeeker::errorTimeout,
                            q, &Launcher::onTimeout);
-                m_ComputerSeeker->start(COMPUTER_SEEK_TIMEOUT);
-
                 q->connect(m_ComputerManager, &ComputerManager::computerStateChanged,
                            q, &Launcher::onComputerUpdated);
                 q->connect(m_ComputerManager, &ComputerManager::quitAppCompleted,
                            q, &Launcher::onQuitAppCompleted);
 
                 emit q->searchingComputer();
+                m_ComputerSeeker->start(COMPUTER_SEEK_TIMEOUT);
             }
             break;
         // Occurs when searched computer is found
@@ -82,8 +82,18 @@ public:
                 if (event.computer->pairState == NvComputer::PS_PAIRED) {
                     m_State = StateSeekApp;
                     m_Computer = event.computer;
-                    m_TimeoutTimer->start(APP_SEEK_TIMEOUT);
                     emit q->searchingApp();
+
+                    // Polling may emit no further change if the cached list is unchanged.
+                    // Fetch explicitly, as the CLI list command does.
+                    try {
+                        NvHTTP http(m_Computer);
+                        m_Apps = http.getAppList();
+                        startSessionOrRequestQuit();
+                    } catch (const std::exception& exception) {
+                        m_State = StateFailure;
+                        emit q->failed(QString::fromUtf8(exception.what()));
+                    }
                 } else {
                     m_State = StateFailure;
                     QString msg = QObject::tr("Computer %1 has not been paired. "
@@ -95,25 +105,31 @@ public:
             break;
         // Occurs when a computer is updated
         case Event::ComputerUpdated:
-            if (m_State == StateSeekApp) {
-                int index = getAppIndex();
-                if (-1 != index) {
-                    app = m_Computer->appList[index];
-                    m_TimeoutTimer->stop();
-                    if (isNotStreaming() || isStreamingApp(app)) {
-                        m_State = StateStartSession;
-                        session = new Session(m_Computer, app, m_Preferences);
-                        emit q->sessionCreated(app.name, session);
-                    } else {
-                        emit q->appQuitRequired(getCurrentAppName());
-                    }
+            if (m_State == StateQuitting && event.computer == m_Computer) {
+                bool stopped;
+                {
+                    QReadLocker lock(&m_Computer->lock);
+                    stopped = m_Computer->state == NvComputer::CS_ONLINE && isNotStreaming();
+                }
+                if (stopped) {
+                    startSessionOrRequestQuit();
                 }
             }
             break;
         // Occurs when there was another app running on computer and user accepted quit
         // confirmation dialog
         case Event::AppQuitRequested:
-            if (m_State == StateSeekApp) {
+            if (m_State == StateAwaitQuit) {
+                {
+                    QReadLocker lock(&m_Computer->lock);
+                    if (isNotStreaming()) {
+                        lock.unlock();
+                        startSessionOrRequestQuit();
+                        break;
+                    }
+                }
+                m_State = StateQuitting;
+                m_TimeoutTimer->start(APP_QUIT_TIMEOUT);
                 m_ComputerManager->quitRunningApp(m_Computer);
             }
             break;
@@ -121,8 +137,9 @@ public:
         // happened. ComputerUpdated event's handler handles session start when previous app has
         // quit.
         case Event::AppQuitCompleted:
-            if (m_State == StateSeekApp && !event.errorMessage.isEmpty()) {
+            if (m_State == StateQuitting && !event.errorMessage.isEmpty()) {
                 m_State = StateFailure;
+                stopPolling();
                 emit q->failed(QObject::tr("Quitting app failed, reason: %1").arg(event.errorMessage));
             }
             break;
@@ -132,18 +149,65 @@ public:
                 m_State = StateFailure;
                 emit q->failed(QObject::tr("Failed to connect to %1").arg(m_ComputerName));
             }
-            if (m_State == StateSeekApp) {
+            if (m_State == StateQuitting) {
                 m_State = StateFailure;
-                emit q->failed(QObject::tr("Failed to find application %1").arg(m_AppName));
+                stopPolling();
+                emit q->failed(QObject::tr("Quitting app failed, reason: %1").arg(QStringLiteral("Request timed out")));
             }
             break;
         }
     }
 
+    void stopPolling()
+    {
+        m_TimeoutTimer->stop();
+        if (m_Polling && m_ComputerManager) {
+            m_ComputerManager->stopPollingAsync();
+        }
+        m_Polling = false;
+    }
+
+    void startSessionOrRequestQuit()
+    {
+        Q_Q(Launcher);
+        NvApp app;
+        QString currentAppName;
+        bool canStart;
+        {
+            QReadLocker lock(&m_Computer->lock);
+            const int index = getAppIndex();
+            if (index == -1) {
+                m_State = StateFailure;
+                lock.unlock();
+                stopPolling();
+                emit q->failed(QObject::tr("Failed to find application %1").arg(m_AppName));
+                return;
+            }
+            app = m_Apps[index];
+            canStart = isNotStreaming() || isStreamingApp(app);
+            currentAppName = getCurrentAppName();
+        }
+
+        if (canStart) {
+            m_State = StateStartSession;
+            stopPolling();
+            auto session = new Session(m_Computer, app, m_Preferences);
+            emit q->sessionCreated(app.name, session);
+        }
+        else {
+            m_State = StateAwaitQuit;
+            if (!m_Polling) {
+                m_Polling = true;
+                m_ComputerManager->startPolling();
+            }
+            emit q->appQuitRequired(currentAppName);
+        }
+    }
+
     int getAppIndex() const
     {
-        for (int i = 0; i < m_Computer->appList.length(); i++) {
-            if (m_Computer->appList[i].name.toLower() == m_AppName.toLower()) {
+        for (int i = 0; i < m_Apps.length(); i++) {
+            if (m_Apps[i].name.compare(m_AppName, Qt::CaseInsensitive) == 0) {
                 return i;
             }
         }
@@ -162,7 +226,7 @@ public:
 
     QString getCurrentAppName() const
     {
-        for (const NvApp& app : m_Computer->appList) {
+        for (const NvApp& app : m_Apps) {
             if (m_Computer->currentGameId == app.id) {
                 return app.name;
             }
@@ -173,12 +237,14 @@ public:
     Launcher *q_ptr;
     QString m_ComputerName;
     QString m_AppName;
+    QVector<NvApp> m_Apps;
     StreamingPreferences *m_Preferences;
-    ComputerManager *m_ComputerManager;
+    QPointer<ComputerManager> m_ComputerManager;
     ComputerSeeker *m_ComputerSeeker;
     NvComputer *m_Computer;
     State m_State;
     QTimer *m_TimeoutTimer;
+    bool m_Polling = false;
 };
 
 Launcher::Launcher(QString computer, QString app,
@@ -199,6 +265,8 @@ Launcher::Launcher(QString computer, QString app,
 
 Launcher::~Launcher()
 {
+    Q_D(Launcher);
+    d->stopPolling();
 }
 
 void Launcher::execute(ComputerManager *manager)
