@@ -20,8 +20,9 @@ service and D-Bus activation environment. Both GUI and CLI launches use the mode
 when `XDG_CURRENT_DESKTOP` includes `mango`. Other desktops are unaffected.
 
 Only the SDL window titled `Linuxmis Native Stream`, with app ID
-`com.linuxmis.linuxmis`, receives the `reserve_right:1` Mango rule. Settings and
-the launcher retain ordinary tiling. The reserved stream cannot be resized,
+`com.linuxmis.linuxmis`, receives the `reserve_right:1` Mango rule. The regular
+GUI retains ordinary tiling; CLI streaming uses a compact, fixed-size loading
+window that Mango floats automatically. The reserved stream cannot be resized,
 floated, grouped, or made fullscreen. Existing mouse and keyboard preferences
 still apply. Use `LINUXMIS_MANGO_SPLIT=0 linuxmis` for ordinary window behavior.
 
@@ -53,12 +54,40 @@ Its arguments are `native|local WIDTH HEIGHT DURATION_MS`. It exits nonzero if
 the native reservation cannot be established, and renders alternating one-pixel
 columns only after acceptance. Set `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` to the
 isolated compositor, not the live desktop, when running automated scenarios.
+Start the isolated compositor with `env -u DBUS_SESSION_BUS_ADDRESS` as well.
+Mango otherwise imports its test display and socket into the live D-Bus and
+systemd user environment, even when `XDG_RUNTIME_DIR` is private. If this has
+already happened, run `dbus-update-activation-environment --systemd DISPLAY
+WAYLAND_DISPLAY MANGO_INSTANCE_SIGNATURE` from a terminal opened by the live
+compositor, then `systemctl --user restart quickshell.service`.
 
 Startup uses bounded `mmsg get all-clients` queries. Its `reservation` object
 reports `pending`, `accepted`, or `rejected`, requested dimensions, rejection
 reason, usable bounds, and scale. No background polling runs during normal
 playback. A neutral buffer maps the window before checking acceptance; video is
 gated until both the reservation and physical drawable are correct.
+
+## Startup
+
+The CLI loading window shows the connection stage without shortcut tips or a
+toolbar. Configuration warnings wrap below the stage and are logged, without
+the former 3.5-second delay per warning. Fatal errors and quit confirmations
+remain interactive. UI-only controller scans are deferred until needed; stream
+controller initialization is unchanged. Successful decoder probes are reused
+only within one validation pass, never across sessions or for the real renderer.
+
+Nix builds precompile QML with the pinned Qt runtime using
+[`qtquickcompiler`](https://doc.qt.io/qt-6/qmldiskcache.html). This also avoids
+loading stale disk-cached UI code after a reproducible build with unchanged
+resource timestamps. Non-Nix developer builds still use Qt's normal disk cache.
+
+For matched timing comparisons, use the same Qt/SDL dependencies, host state,
+stream settings, and compositor. Run `linuxmis stream yves desktop --no-quit-after`
+with each binary, then disconnect normally without quitting the Windows app.
+Compare `Startup: stream validation completed`, `Received first video packet`,
+and `First video frame submitted to renderer` logs across several runs. The
+last is a render-submission timestamp, not measured display scanout. Do not
+count shader compilation during the decoder preflight as the first stream frame.
 
 ## NixOS Deployment
 

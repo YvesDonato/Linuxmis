@@ -11,17 +11,21 @@
 #include "streaming/video/ffmpeg-renderers/pacer/waylandvsyncsource.h"
 #include "streaming/video/ffmpeg-renderers/eglvid.h"
 #include "streaming/mangonativesplit.h"
+#include "streaming/session.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QFile>
 #include <QStandardPaths>
+#include <QQmlComponent>
+#include <QQmlEngine>
+#include <QQuickItem>
 #include <SDL_syswm.h>
 #endif
 
 static QVector<NvComputer*> hosts;
 static QVector<NvApp> apps;
-static int pollingRefs, appRequests, quitRequests, manualRequests;
+static int pollingRefs, appRequests, quitRequests, manualRequests, gamepadQueries;
 static bool failAppList, failContext;
 static const char* failedThread = "";
 static int displays = 2;
@@ -45,6 +49,10 @@ static QByteArray nativeReply(QJsonArray clients)
 // Linker wrappers isolate networking and inject platform failures. All state machines
 // and queue/display management below are the actual application implementations.
 extern "C" {
+QString __wrap__ZN15SdlInputHandler19getUnmappedGamepadsEv() {
+    ++gamepadQueries;
+    return QStringLiteral("Test Gamepad");
+}
 QVector<NvComputer*> __wrap__ZN15ComputerManager12getComputersEv(ComputerManager*) { return hosts; }
 void __wrap__ZN15ComputerManager12startPollingEv(ComputerManager*) { ++pollingRefs; }
 void __wrap__ZN15ComputerManager16stopPollingAsyncEv(ComputerManager*) { --pollingRefs; }
@@ -110,6 +118,80 @@ public:
 class Regressions : public QObject {
     Q_OBJECT
 private slots:
+    void launchStatusWrapsWarnings() {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            import QtQuick 2.9
+            import QtQuick.Controls 2.2
+            import "qrc:/gui"
+            ApplicationWindow {
+                visible: true
+                width: 480
+                height: launchHeight
+                FontLoader { id: testFont; source: "qrc:/data/ModeSeven.ttf" }
+                font.family: testFont.name
+                property bool directStream: true
+                property int launchHeight: 180
+                LaunchStatus {
+                    objectName: "status"
+                    anchors.centerIn: parent
+                    text: "Starting desktop..."
+                }
+            }
+        )", QUrl());
+        QScopedPointer<QObject> window(component.create());
+        QVERIFY2(window, qPrintable(component.errorString()));
+        auto status = window->findChild<QQuickItem*>("status");
+        QVERIFY(status);
+        QCOMPARE(status->width(), qreal(420));
+        status->setProperty("warningText", QStringLiteral("A configuration warning that must remain readable. ").repeated(15));
+        QTRY_VERIFY(status->implicitHeight() > 180);
+        QVERIFY(window->property("launchHeight").toInt() >= status->implicitHeight() + 48);
+    }
+
+    void gamepadQueryIsLazyAndCached() {
+        gamepadQueries = 0;
+        SystemProperties properties;
+        QCOMPARE(gamepadQueries, 0);
+        QCOMPARE(properties.property("unmappedGamepads").toString(), QStringLiteral("Test Gamepad"));
+        QCOMPARE(properties.property("unmappedGamepads").toString(), QStringLiteral("Test Gamepad"));
+        QCOMPARE(gamepadQueries, 1);
+    }
+
+    void decoderProbeReusesMatchingValidationOnly() {
+        NvComputer host{};
+        NvApp app;
+        auto preferences = StreamingPreferences::get();
+        Session session(&host, app, preferences);
+        Session::DecoderProbe hardware;
+        hardware.availability = Session::DecoderAvailability::Hardware;
+        hardware.capabilities = CAPABILITY_REFERENCE_FRAME_INVALIDATION_HEVC;
+        hardware.colorSpace = COLORSPACE_REC_709;
+        hardware.colorRange = COLOR_RANGE_FULL;
+        const auto mode = preferences->videoDecoderSelection;
+        const Session::DecoderProbeKey key(nullptr, mode, VIDEO_FORMAT_H265, 1920, 1440, 175);
+        session.m_DecoderProbes.emplace(key, hardware);
+        QCOMPARE(session.getDecoderAvailability(nullptr, mode, VIDEO_FORMAT_H265, 1920, 1440, 175),
+                 Session::DecoderAvailability::Hardware);
+        LiInitializeStreamConfiguration(&session.m_StreamConfig);
+        session.m_StreamConfig.width = 1920;
+        session.m_StreamConfig.height = 1440;
+        session.m_StreamConfig.fps = 175;
+        session.m_SupportedVideoFormats.append(VIDEO_FORMAT_H265);
+        QVERIFY(session.populateDecoderProperties(nullptr));
+        QCOMPARE(session.m_VideoCallbacks.capabilities, hardware.capabilities);
+        QCOMPARE(session.m_StreamConfig.colorSpace, hardware.colorSpace);
+        QCOMPARE(session.m_StreamConfig.colorRange, hardware.colorRange);
+        QCOMPARE(session.m_DecoderProbes.size(), size_t(1));
+        for (const auto& other : {
+             Session::DecoderProbeKey(nullptr, mode, VIDEO_FORMAT_H264, 1920, 1440, 175),
+             Session::DecoderProbeKey(nullptr, mode, VIDEO_FORMAT_H265, 1920, 1080, 175),
+             Session::DecoderProbeKey(nullptr, mode, VIDEO_FORMAT_H265, 1920, 1440, 60)}) {
+            QVERIFY(session.m_DecoderProbes.find(other) == session.m_DecoderProbes.end());
+        }
+    }
+
     void nativeSplitValidatesCompositorGeometry() {
         using ReservationState = MangoNativeSplit::ReservationState;
         auto check = [](QJsonObject client, QSize size) {
@@ -387,6 +469,7 @@ int main(int argc, char** argv)
     qputenv("XDG_CACHE_HOME", state.path().toUtf8());
     qputenv("XDG_DATA_HOME", state.path().toUtf8());
     qputenv("QT_QPA_PLATFORM", "offscreen");
+    qputenv("QT_QUICK_BACKEND", "software");
     qputenv("SDL_VIDEODRIVER", "dummy");
     qunsetenv("WAYLAND_DISPLAY");
     qunsetenv("DISPLAY");

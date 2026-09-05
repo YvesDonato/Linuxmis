@@ -22,7 +22,7 @@ public:
     Q_PROPERTY(bool hasDesktopEnvironment MEMBER hasDesktopEnvironment CONSTANT)
     Q_PROPERTY(bool hasBrowser MEMBER hasBrowser CONSTANT)
     Q_PROPERTY(bool hasDiscordIntegration MEMBER hasDiscordIntegration CONSTANT)
-    Q_PROPERTY(QString unmappedGamepads MEMBER unmappedGamepads NOTIFY unmappedGamepadsChanged)
+    Q_PROPERTY(QString unmappedGamepads READ getUnmappedGamepads NOTIFY unmappedGamepadsChanged)
     Q_PROPERTY(QSize maximumResolution MEMBER maximumResolution NOTIFY decoderInfoChanged)
     Q_PROPERTY(QString versionString MEMBER versionString CONSTANT)
     Q_PROPERTY(bool supportsHdr MEMBER supportsHdr NOTIFY decoderInfoChanged)
@@ -31,6 +31,7 @@ public:
     Q_PROPERTY(bool hasVulkanHdr MEMBER hasVulkanHdr CONSTANT)
 
     Q_INVOKABLE void ensureDecoderInfo();
+    QString getUnmappedGamepads();
     Q_INVOKABLE void refreshDisplays();
     Q_INVOKABLE int getDisplayCount() const;
     Q_INVOKABLE QRect getNativeResolution(int displayIndex);
@@ -50,6 +51,7 @@ private:
     void refreshDisplaysInternal();
 
     bool m_DecoderInfoQueried = false;
+    bool m_GamepadInfoQueried = false;
     bool hasHardwareAcceleration = false;
     bool rendererAlwaysFullScreen = false;
     bool isRunningWayland;

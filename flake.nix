@@ -153,8 +153,11 @@
 
             configurePhase = ''
               runHook preConfigure
+              # Nix pins the Qt runtime, so bundled QML can be compiled with it.
               qmake artemis.pro \
                 CONFIG+=release \
+                CONFIG+=qtquickcompiler \
+                QT_TOOL.qmlcachegen.binary=${qt.qtdeclarative}/libexec/qmlcachegen \
                 CONFIG+=disable-prebuilts \
                 CONFIG+=disable-libplacebo \
                 PREFIX=$out \
@@ -176,6 +179,7 @@
                 CONFIG+=release CONFIG+=disable-prebuilts CONFIG+=disable-libplacebo
               make -f Makefile.tests -j$NIX_BUILD_CORES release
               QT_PLUGIN_PATH="${qt.qtbase}/${qt.qtbase.qtPluginPrefix}" \
+                QML2_IMPORT_PATH="${qt.qtdeclarative}/${qt.qtbase.qtQmlPrefix}" \
                 timeout 60 ./linuxmis-regression-tests -o -,txt
               popd
               runHook postCheck

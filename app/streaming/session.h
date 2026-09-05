@@ -2,6 +2,8 @@
 
 #include <QSemaphore>
 #include <QWindow>
+#include <map>
+#include <tuple>
 
 #include <Limelight.h>
 #include <opus_multistream.h>
@@ -207,10 +209,22 @@ private:
         Hardware
     };
 
-    static
     DecoderAvailability getDecoderAvailability(SDL_Window* window,
                                                StreamingPreferences::VideoDecoderSelection vds,
                                                int videoFormat, int width, int height, int frameRate);
+
+    struct DecoderProbe {
+        DecoderAvailability availability = DecoderAvailability::None;
+        int capabilities = 0;
+        int colorSpace = 0;
+        int colorRange = 0;
+        bool fullScreenOnly = false;
+    };
+    using DecoderProbeKey = std::tuple<SDL_Window*, int, int, int, int, int>;
+    std::map<DecoderProbeKey, DecoderProbe> m_DecoderProbes;
+    DecoderProbe probeDecoder(SDL_Window* window, StreamingPreferences::VideoDecoderSelection vds,
+                              int videoFormat, int width, int height, int frameRate);
+    friend class Regressions;
 
     static
     bool chooseDecoder(StreamingPreferences::VideoDecoderSelection vds,

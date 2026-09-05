@@ -69,8 +69,16 @@ SystemProperties::SystemProperties()
     hasDiscordIntegration = false;
 #endif
 
-    unmappedGamepads = SdlInputHandler::getUnmappedGamepads();
-    // Decoder probing is deferred until Settings needs the capabilities.
+    // Hardware queries are deferred until the UI actually needs them.
+}
+
+QString SystemProperties::getUnmappedGamepads()
+{
+    if (!m_GamepadInfoQueried) {
+        unmappedGamepads = SdlInputHandler::getUnmappedGamepads();
+        m_GamepadInfoQueried = true;
+    }
+    return unmappedGamepads;
 }
 
 void SystemProperties::ensureDecoderInfo()

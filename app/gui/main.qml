@@ -13,6 +13,9 @@ import SdlGamepadKeyNavigation 1.0
 
 ApplicationWindow {
     property bool pollingActive: false
+    readonly property bool directStream: initialView === "qrc:/gui/CliStartStreamSegue.qml"
+    property int launchWidth: 480
+    property int launchHeight: 180
 
     // Set by SettingsView to force the back operation to pop all
     // pages except the initial view. This is required when doing
@@ -20,8 +23,14 @@ ApplicationWindow {
     property bool clearOnBack: false
 
     id: window
-    width: 1280
-    height: 600
+    width: directStream ? launchWidth : 1280
+    height: directStream ? launchHeight : 600
+    minimumWidth: directStream ? launchWidth : 0
+    maximumWidth: directStream ? launchWidth : 16777215
+    minimumHeight: directStream ? launchHeight : 0
+    maximumHeight: directStream ? launchHeight : 16777215
+    title: "linuxmis"
+    flags: directStream && SystemProperties.hasDesktopEnvironment ? Qt.Dialog : Qt.Window
     color: TokyoNight.background
     Material.theme: Material.Dark
     Material.primary: TokyoNight.surface
@@ -38,12 +47,16 @@ ApplicationWindow {
             Material.background = TokyoNight.background
         }
 
-        SdlGamepadKeyNavigation.enable()
+        if (!directStream)
+            SdlGamepadKeyNavigation.enable()
     }
 
     Component.onCompleted: {
         // Show the window according to the user's preferences
-        if (SystemProperties.hasDesktopEnvironment) {
+        if (directStream && SystemProperties.hasDesktopEnvironment) {
+            window.show()
+        }
+        else if (SystemProperties.hasDesktopEnvironment) {
             if (StreamingPreferences.uiDisplayMode == StreamingPreferences.UI_MAXIMIZED) {
                 window.showMaximized()
             }
@@ -62,7 +75,7 @@ ApplicationWindow {
             wow64Dialog.open()
         }
 
-        if (SystemProperties.unmappedGamepads) {
+        if (!directStream && SystemProperties.unmappedGamepads) {
             unmappedGamepadDialog.unmappedGamepads = SystemProperties.unmappedGamepads
             unmappedGamepadDialog.open()
         }
@@ -186,7 +199,7 @@ ApplicationWindow {
                 pollingActive = false
             }
         }
-        else if (active) {
+        else if (active && !directStream) {
             // When we become visible and active again, start polling
             inactivityTimer.stop()
 
@@ -207,7 +220,7 @@ ApplicationWindow {
             inactivityTimer.stop()
 
             // Restart polling if it was stopped
-            if (!pollingActive) {
+            if (!pollingActive && !directStream) {
                 ComputerManager.startPolling()
                 pollingActive = true
             }
@@ -254,6 +267,7 @@ ApplicationWindow {
 
     header: ToolBar {
         id: toolBar
+        visible: !directStream
         height: 60
         anchors.topMargin: 5
         anchors.bottomMargin: 5

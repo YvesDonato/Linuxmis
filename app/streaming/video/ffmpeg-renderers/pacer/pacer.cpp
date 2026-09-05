@@ -361,6 +361,10 @@ void Pacer::renderFrame(AVFrame* frame)
     // Render it
     m_VsyncRenderer->renderFrame(frame);
     Uint32 afterRender = SDL_GetTicks();
+    if (!m_FirstFrameRendered) {
+        m_FirstFrameRendered = true;
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "First video frame submitted to renderer at %u ms", afterRender);
+    }
 
     m_VideoStats->totalRenderTime += afterRender - beforeRender;
     m_VideoStats->renderedFrames++;

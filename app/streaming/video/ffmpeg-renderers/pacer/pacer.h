@@ -72,4 +72,5 @@ private:
     int m_DisplayFps;
     PVIDEO_STATS m_VideoStats;
     int m_RendererAttributes;
+    bool m_FirstFrameRendered = false;
 };

@@ -33,9 +33,7 @@ Item {
     {
         // Hide the UI contents so the user doesn't
         // see them briefly when we pop off the StackView
-        stageSpinner.visible = false
-        stageLabel.visible = false
-        hintText.visible = false
+        status.visible = false
 
         // Hide the window now that streaming has begun
         window.visible = false
@@ -50,13 +48,7 @@ Item {
 
     function displayLaunchWarning(text)
     {
-        // This toast appears for 3 seconds, just shorter than how long
-        // Session will wait for it to be displayed. This gives it time
-        // to transition to invisible before continuing.
-        var toast = Qt.createQmlObject('import QtQuick.Controls 2.2; ToolTip {}', parent, '')
-        toast.text = text
-        toast.timeout = 3000
-        toast.visible = true
+        status.warningText += (status.warningText ? "\n" : "") + text
         console.warn(text)
     }
 
@@ -77,7 +69,8 @@ Item {
         }
 
         // Re-enable GUI gamepad usage now
-        SdlGamepadKeyNavigation.enable()
+        if (!quitAfter)
+            SdlGamepadKeyNavigation.enable()
 
         if (quitAfter) {
             if (streamSegueErrorDialog.text) {
@@ -120,7 +113,8 @@ Item {
         toolBar.visible = true
 
         // Re-enable GUI gamepad usage now
-        SdlGamepadKeyNavigation.enable()
+        if (!quitAfter)
+            SdlGamepadKeyNavigation.enable()
     }
 
     StackView.onActivated: {
@@ -137,35 +131,10 @@ Item {
         session.sessionFinished.connect(sessionFinished)
         session.readyForDeletion.connect(sessionReadyForDeletion)
 
-        // Kick off the stream
-        spinnerTimer.start()
-        streamLoader.active = true
-    }
-
-    Timer {
-        id: spinnerTimer
-
-        // Display the spinner appearance a bit to allow us to reach
-        // the code in Session.exec() that pumps the event loop.
-        // If we display it immediately, it will briefly hang in the
-        // middle of the animation on Windows, which looks very
-        // obviously broken.
-        interval: 100
-        onTriggered: stageSpinner.running = true
-    }
-
-    Loader {
-        id: streamLoader
-        active: false
-        asynchronous: true
-
-        onLoaded: {
-            // Set the hint text. We do this here rather than
-            // in the hintText control itself to synchronize
-            // with Session.exec() which requires no concurrent
-            // gamepad usage.
-            hintText.text = qsTr("Tip:") + " " + qsTr("Press %1 to disconnect your session").arg(SdlGamepadKeyNavigation.getConnectedGamepads() > 0 ?
-                                                  qsTr("Start+Select+L1+R1") : qsTr("Ctrl+Alt+Shift+Q"))
+        // Let StackView finish activation before Session takes over the loop.
+        Qt.callLater(function() {
+            if (!session || StackView.status !== StackView.Active)
+                return
 
             // Stop GUI gamepad usage now
             SdlGamepadKeyNavigation.disable()
@@ -177,39 +146,12 @@ Item {
 
             // Run the streaming session to completion
             session.exec(window)
-        }
-
-        sourceComponent: Item {}
+        })
     }
 
-    Row {
+    LaunchStatus {
+        id: status
         anchors.centerIn: parent
-        spacing: 5
-
-        BusyIndicator {
-            id: stageSpinner
-            running: false
-        }
-
-        Label {
-            id: stageLabel
-            height: stageSpinner.height
-            text: stageText
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-
-            wrapMode: Text.Wrap
-        }
-    }
-
-    Label {
-        id: hintText
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 50
-        anchors.horizontalCenter: parent.horizontalCenter
-        font.pointSize: 18
-        verticalAlignment: Text.AlignVCenter
-
-        wrapMode: Text.Wrap
+        text: stageText
     }
 }

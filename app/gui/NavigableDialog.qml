@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.2
+import SdlGamepadKeyNavigation 1.0
 
 Dialog {
     // We should use Overlay.overlay here but that's not available in Qt 5.9 :(
@@ -7,6 +8,15 @@ Dialog {
 
     x: Math.round((parent.width - width) / 2)
     y: Math.round((parent.height - height) / 2)
+
+    onAboutToShow: {
+        if (window.directStream) {
+            SdlGamepadKeyNavigation.enable()
+            window.launchWidth = Math.max(480, implicitWidth + 48)
+            window.launchHeight = Math.max(180, implicitHeight + 48)
+            window.show()
+        }
+    }
 
     onAboutToHide: {
         // We must force focus back to the last item for platforms without

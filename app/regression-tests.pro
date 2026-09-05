@@ -12,5 +12,5 @@ WRAPPED_SYMBOLS = SDL_CreateThread SDL_GetNumVideoDisplays SDL_GetNumDisplayMode
     _ZN15ComputerManager12getComputersEv _ZN15ComputerManager12startPollingEv \
     _ZN15ComputerManager16stopPollingAsyncEv _ZN15ComputerManager18addNewHostManuallyE7QString \
     _ZN15ComputerManager14quitRunningAppEP10NvComputer _ZN6NvHTTP10getAppListEv \
-    _ZN13CompatFetcher5startEv
+    _ZN13CompatFetcher5startEv _ZN15SdlInputHandler19getUnmappedGamepadsEv
 for(symbol, WRAPPED_SYMBOLS): QMAKE_LFLAGS += -Wl,--wrap=$$symbol

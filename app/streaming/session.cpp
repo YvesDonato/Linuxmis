@@ -3,6 +3,7 @@
 #include "streaming/streamutils.h"
 #include "streaming/mangonativesplit.h"
 #include <memory>
+#include <QElapsedTimer>
 #include "backend/richpresencemanager.h"
 #include "backend/quickmenumanager.h"
 #include "backend/servercommandmanager.h"
@@ -517,17 +518,36 @@ Session::getDecoderAvailability(SDL_Window* window,
                                 StreamingPreferences::VideoDecoderSelection vds,
                                 int videoFormat, int width, int height, int frameRate)
 {
-    IVideoDecoder* decoder;
+    return probeDecoder(window, vds, videoFormat, width, height, frameRate).availability;
+}
 
-    if (!chooseDecoder(vds, window, videoFormat, width, height, frameRate, false, false, true, decoder)) {
-        return DecoderAvailability::None;
+Session::DecoderProbe Session::probeDecoder(SDL_Window* window,
+                                           StreamingPreferences::VideoDecoderSelection vds,
+                                           int videoFormat, int width, int height, int frameRate)
+{
+    const DecoderProbeKey key(window, vds, videoFormat, width, height, frameRate);
+    const auto previous = m_DecoderProbes.find(key);
+    if (previous != m_DecoderProbes.end()) {
+        return previous->second;
     }
 
-    bool hw = decoder->isHardwareAccelerated();
+    IVideoDecoder* decoder;
+    if (!chooseDecoder(vds, window, videoFormat, width, height, frameRate, false, false, true, decoder)) {
+        return {};
+    }
 
+    DecoderProbe result;
+    result.availability = decoder->isHardwareAccelerated() ? DecoderAvailability::Hardware : DecoderAvailability::Software;
+    result.capabilities = decoder->getDecoderCapabilities();
+    result.colorSpace = decoder->getDecoderColorspace();
+    result.colorRange = decoder->getDecoderColorRange();
+    result.fullScreenOnly = decoder->isAlwaysFullScreen();
     delete decoder;
 
-    return hw ? DecoderAvailability::Hardware : DecoderAvailability::Software;
+    // Reuse only successful tests in this validation pass, never across sessions
+    // or for the real streaming renderer/window.
+    m_DecoderProbes.emplace(key, result);
+    return result;
 }
 
 void Session::toggleQuickMenu()
@@ -539,22 +559,17 @@ void Session::toggleQuickMenu()
 
 bool Session::populateDecoderProperties(SDL_Window* window)
 {
-    IVideoDecoder* decoder;
-
     // Use actual fps for decoder testing (handles Linuxmis's fps * 1000 representation)
     int testFps = getActualFpsForDecoderTest();
 
-    if (!chooseDecoder(m_Preferences->videoDecoderSelection,
-                       window,
-                       m_SupportedVideoFormats.first(),
-                       m_StreamConfig.width,
-                       m_StreamConfig.height,
-                       testFps,
-                       false, false, true, decoder)) {
+    const auto probe = probeDecoder(window, m_Preferences->videoDecoderSelection,
+                                    m_SupportedVideoFormats.first(), m_StreamConfig.width,
+                                    m_StreamConfig.height, testFps);
+    if (probe.availability == DecoderAvailability::None) {
         return false;
     }
 
-    m_VideoCallbacks.capabilities = decoder->getDecoderCapabilities();
+    m_VideoCallbacks.capabilities = probe.capabilities;
     if (m_VideoCallbacks.capabilities & CAPABILITY_PULL_RENDERER) {
         // It is an error to pass a push callback when in pull mode
         m_VideoCallbacks.submitDecodeUnit = nullptr;
@@ -573,7 +588,7 @@ bool Session::populateDecoderProperties(SDL_Window* window)
                         m_StreamConfig.colorSpace);
         }
         else {
-            m_StreamConfig.colorSpace = decoder->getDecoderColorspace();
+            m_StreamConfig.colorSpace = probe.colorSpace;
         }
 
         m_StreamConfig.colorRange = qEnvironmentVariableIntValue("COLOR_RANGE_OVERRIDE", &ok);
@@ -583,15 +598,13 @@ bool Session::populateDecoderProperties(SDL_Window* window)
                         m_StreamConfig.colorRange);
         }
         else {
-            m_StreamConfig.colorRange = decoder->getDecoderColorRange();
+            m_StreamConfig.colorRange = probe.colorRange;
         }
     }
 
-    if (decoder->isAlwaysFullScreen()) {
+    if (probe.fullScreenOnly) {
         m_IsFullScreen = true;
     }
-
-    delete decoder;
 
     return true;
 }
@@ -626,6 +639,9 @@ Session::Session(NvComputer* computer, NvApp& app, StreamingPreferences *prefere
 
 bool Session::initialize()
 {
+    m_DecoderProbes.clear();
+    QElapsedTimer startupTimer;
+    startupTimer.start();
 #ifdef Q_OS_DARWIN
     if (qEnvironmentVariableIntValue("I_WANT_BUGGY_FULLSCREEN") == 0) {
         // If we have a notch and the user specified one of the two native display modes
@@ -999,7 +1015,9 @@ bool Session::initialize()
         ret = populateDecoderProperties(testWindow);
     }
 
+    m_DecoderProbes.clear();
     SDL_DestroyWindow(testWindow);
+    qInfo() << "Startup: stream validation completed in" << startupTimer.elapsed() << "ms";
 
     if (!ret) {
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -1011,22 +1029,7 @@ bool Session::initialize()
         // This avoids conflicts between the windows on display subsystems
         // such as KMSDRM that only support a single window.
         for (const auto &text : m_LaunchWarnings) {
-            // Emit the warning to the UI
             emit displayLaunchWarning(text);
-
-            // Wait a little bit so the user can actually read what we just said.
-            // This wait is a little longer than the actual toast timeout (3 seconds)
-            // to allow it to transition off the screen before continuing.
-            uint32_t start = SDL_GetTicks();
-            while (!SDL_TICKS_PASSED(SDL_GetTicks(), start + 3500)) {
-                SDL_Delay(5);
-
-                if (!m_ThreadedExec) {
-                    // Pump the UI loop while we wait if we're on the main thread
-                    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-                    QCoreApplication::sendPostedEvents();
-                }
-            }
         }
     }
 
@@ -1061,6 +1064,7 @@ bool Session::initialize()
 
 void Session::emitLaunchWarning(QString text)
 {
+    qWarning().noquote() << text;
     // Queue this launch warning to be displayed after validation
     m_LaunchWarnings.append(text);
 }

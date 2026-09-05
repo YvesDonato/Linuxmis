@@ -5,11 +5,11 @@ import ComputerManager 1.0
 
 Item {
     function onSearchingComputer() {
-        stageLabel.text = qsTr("Establishing connection to PC...")
+        status.text = qsTr("Establishing connection to PC...")
     }
 
     function onSearchingApp() {
-        stageLabel.text = qsTr("Loading app list...")
+        status.text = qsTr("Loading app list...")
     }
 
     function onSessionCreated(appName, session) {
@@ -19,7 +19,7 @@ Item {
             "session": session,
             "quitAfter": true
         })
-        stackView.push(segue)
+        stackView.push(segue, StackView.Immediate)
     }
 
     function onLaunchFailed(message) {
@@ -46,22 +46,9 @@ Item {
         }
     }
 
-    Row {
+    LaunchStatus {
+        id: status
         anchors.centerIn: parent
-        spacing: 5
-
-        BusyIndicator {
-            id: stageSpinner
-        }
-
-        Label {
-            id: stageLabel
-            height: stageSpinner.height
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-
-            wrapMode: Text.Wrap
-        }
     }
 
     ErrorMessageDialog {
